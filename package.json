@@ -1,0 +1,14 @@
+{
+  "name": "hello-node-project",
+  "version": "1.0.0",
+  "description": "Minimum Node.js server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ejs": "^3.1.10"
+  }
+}
