@@ -2,7 +2,7 @@
 
 ## Overview
 
-Daily Flow is a web application designed to simplify task management by focusing on daily, recurring commitments. Built with a modern **Node.js** backend and a **LowDB** database, it offers a fast, secure, and clean user experience with a light theme powered by **Tailwind CSS**.
+Daily Flow is a web application designed to simplify task management by focusing on daily, recurring commitments. Built with a modern **Node.js** backend and a **MongoDB** database, it offers a fast, secure, and clean user experience with a light theme powered by **Tailwind CSS**.
 
 ---
 
@@ -21,7 +21,7 @@ Daily Flow is a web application designed to simplify task management by focusing
 * **Frontend:** HTML/JavaScript
 * **Styling:** Tailwind CSS (Light Theme)
 * **Backend:** Node.js
-* **Database:** Embedded LowDB (JSON-based)
+* **Database:** MongoDB (using Mongoose)
 * **Deployment:** Render.com
 
 ---

@@ -3,12 +3,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
-import { Low } from 'lowdb';
-import { JSONFile } from 'lowdb/node';
+import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import User from './models/User.js';
+import Task from './models/Task.js';
 
 dotenv.config();
 
@@ -26,25 +27,33 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 
 // Database Setup
-const adapter = new JSONFile(path.join(__dirname, 'data', 'db.json'));
-const db = new Low(adapter, { users: [], tasks: [] });
+const MONGODB_URI = process.env.MONGODB_URI;
 
-await db.read();
-db.data = db.data || { users: [], tasks: [] };
-await db.write();
+if (!MONGODB_URI) {
+  console.warn('Warning: MONGODB_URI is not defined using temporary local fallback or failing.');
+}
 
-// Helper Functions
-const getUserByEmail = (email) => db.data.users.find(u => u.email === email);
-const getUserById = (id) => db.data.users.find(u => u.id === id);
+mongoose.connect(MONGODB_URI || 'mongodb://localhost:27017/dailytodo')
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// Helper Functions removed (using Mongoose models directly)
 
 // Auth Middleware
-const auth = (req, res, next) => {
+const auth = async (req, res, next) => {
   const userId = req.cookies.userId;
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-  const user = getUserById(userId);
-  if (!user) return res.status(401).json({ error: 'Unauthorized' });
-  req.user = user;
-  next();
+  
+  try {
+    // Mongoose findById
+    const user = await User.findById(userId);
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    req.user = user;
+    next();
+  } catch (err) {
+    console.error('Auth error:', err);
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 };
 
 // Routes
@@ -56,35 +65,42 @@ app.post('/api/auth/register', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
   
-  await db.read();
-  if (getUserByEmail(email)) return res.status(400).json({ error: 'User already exists' });
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ error: 'User already exists' });
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = { id: Date.now().toString(), email, password: hashedPassword };
-  
-  db.data.users.push(newUser);
-  await db.write();
-  
-  res.status(201).json({ message: 'User created' });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ email, password: hashedPassword });
+    
+    await newUser.save();
+    
+    res.status(201).json({ message: 'User created' });
+  } catch (err) {
+    console.error('Signup error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Login
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
-  await db.read();
-  const user = getUserByEmail(email);
-  
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.status(400).json({ error: 'Invalid credentials' });
-  }
+  try {
+    const user = await User.findOne({ email });
+    
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
 
-  res.cookie('userId', user.id, { 
-    httpOnly: true, 
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
-  });
-  
-  res.json({ message: 'Logged in', user: { id: user.id, email: user.email } });
+    res.cookie('userId', user._id.toString(), { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+    
+    res.json({ message: 'Logged in', user: { id: user._id.toString(), email: user.email } });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Logout
@@ -95,41 +111,42 @@ app.post('/api/auth/logout', (req, res) => {
 
 // Me
 app.get('/api/auth/me', auth, (req, res) => {
-  res.json({ user: { id: req.user.id, email: req.user.email } });
+  res.json({ user: { id: req.user._id.toString(), email: req.user.email } });
 });
 
 // Tasks
 
 // Get Tasks
 app.get('/api/tasks', auth, async (req, res) => {
-  await db.read();
-  const tasks = db.data.tasks.filter(t => t.userId === req.user.id);
-  // Sort by priority (higher index = higher priority? Or simple number field?)
-  // Let's use an explicit priority index (0 is highest?) Or just order in array?
-  // Use a 'priority' field. 0 = highest.
-  tasks.sort((a, b) => a.priority - b.priority);
-  res.json(tasks);
+  try {
+    const tasks = await Task.find({ userId: req.user._id }).sort({ priority: 1 });
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Create Task
 app.post('/api/tasks', auth, async (req, res) => {
   const { text, days } = req.body;
   // days: array of numbers 0-6 (Sun-Sat) or names. Let's use 0-6.
-  // Default to all days if not provided handled by frontend, but robust here.
   
-  await db.read();
-  const newTask = {
-    id: Date.now().toString(),
-    userId: req.user.id,
-    text,
-    completedDates: [], // Store dates 'YYYY-MM-DD' when completed
-    days: days || [0, 1, 2, 3, 4, 5, 6], // Default all
-    priority: db.data.tasks.filter(t => t.userId === req.user.id).length // Add to end
-  };
-  
-  db.data.tasks.push(newTask);
-  await db.write();
-  res.status(201).json(newTask);
+  try {
+    // Get current max priority to add to end
+    const count = await Task.countDocuments({ userId: req.user._id });
+
+    const newTask = new Task({
+      userId: req.user._id,
+      text,
+      days: days || [0, 1, 2, 3, 4, 5, 6], // Default all
+      priority: count
+    });
+    
+    await newTask.save();
+    res.status(201).json(newTask);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Update Task (Toggle Complete)
@@ -137,62 +154,59 @@ app.patch('/api/tasks/:id', auth, async (req, res) => {
   const { id } = req.params;
   const { date, completed } = req.body; // Expecting date string YYYY-MM-DD
   
-  await db.read();
-  const task = db.data.tasks.find(t => t.id === id && t.userId === req.user.id);
-  if (!task) return res.status(404).json({ error: 'Task not found' });
+  try {
+    const task = await Task.findOne({ _id: id, userId: req.user._id });
+    if (!task) return res.status(404).json({ error: 'Task not found' });
 
-  if (date !== undefined && completed !== undefined) {
-    if (completed) {
-      if (!task.completedDates.includes(date)) task.completedDates.push(date);
-    } else {
-      task.completedDates = task.completedDates.filter(d => d !== date);
+    if (date !== undefined && completed !== undefined) {
+      if (completed) {
+        if (!task.completedDates.includes(date)) task.completedDates.push(date);
+      } else {
+        task.completedDates = task.completedDates.filter(d => d !== date);
+      }
     }
+
+    if (req.body.priority !== undefined) task.priority = req.body.priority;
+    if (req.body.text !== undefined) task.text = req.body.text;
+    if (req.body.days !== undefined) task.days = req.body.days;
+
+    await task.save();
+    res.json(task);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
   }
-
-  // Handle priority update or text update if needed
-  if (req.body.priority !== undefined) task.priority = req.body.priority;
-  if (req.body.text !== undefined) task.text = req.body.text;
-  if (req.body.days !== undefined) task.days = req.body.days;
-
-  await db.write();
-  res.json(task);
 });
 
 // Delete Task
 app.delete('/api/tasks/:id', auth, async (req, res) => {
   const { id } = req.params;
-  await db.read();
-  const initialLength = db.data.tasks.length;
-  db.data.tasks = db.data.tasks.filter(t => t.id !== id || t.userId !== req.user.id);
-  
-  if (db.data.tasks.length === initialLength) {
-    return res.status(404).json({ error: 'Task not found' });
-  }
+  try {
+    const result = await Task.findOneAndDelete({ _id: id, userId: req.user._id });
+    
+    if (!result) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
 
-  await db.write();
-  res.json({ message: 'Task deleted' });
+    res.json({ message: 'Task deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Reorder Tasks
 app.patch('/api/tasks/reorder/batch', auth, async (req, res) => {
   const { taskIds } = req.body; // Array of IDs in new order
-  await db.read();
   
-  // Update priority based on index in taskIds
-  // Filter tasks for this user
-  const userTasks = db.data.tasks.filter(t => t.userId === req.user.id);
-  
-  userTasks.forEach(task => {
-    const newIndex = taskIds.indexOf(task.id);
-    if (newIndex !== -1) {
-      task.priority = newIndex;
-    }
-  });
+  try {
+    const operations = taskIds.map((id, index) => {
+      return Task.updateOne({ _id: id, userId: req.user._id }, { priority: index });
+    });
 
-  // Sort global array? No, just save.
-  
-  await db.write();
-  res.json({ message: 'Tasks reordered' });
+    await Promise.all(operations);
+    res.json({ message: 'Tasks reordered' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 
