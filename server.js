@@ -48,9 +48,8 @@ const auth = (req, res, next) => {
 };
 
 // Routes
-app.get('/', (req, res) => {
-  res.send('Daily Todo API is running. Access the frontend at <a href="http://localhost:5173">http://localhost:5173</a>');
-});
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'client/dist')));
 
 // Register
 app.post('/api/auth/register', async (req, res) => {
@@ -196,6 +195,12 @@ app.patch('/api/tasks/reorder/batch', auth, async (req, res) => {
   res.json({ message: 'Tasks reordered' });
 });
 
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client/dist/index.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
