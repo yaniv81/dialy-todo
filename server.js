@@ -77,8 +77,7 @@ app.post('/api/auth/register', async (req, res) => {
     res.status(201).json({ message: 'User created' });
   } catch (err) {
     console.error('Signup error:', err);
-    // Return specific error message for debugging
-    res.status(500).json({ error: err.message || 'Server error' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -100,9 +99,7 @@ app.post('/api/auth/login', async (req, res) => {
     
     res.json({ message: 'Logged in', user: { id: user._id.toString(), email: user.email } });
   } catch (err) {
-    console.error('Login error:', err);
-    // Return specific error message for debugging
-    res.status(500).json({ error: err.message || 'Server error' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
