@@ -48,6 +48,9 @@ const auth = (req, res, next) => {
 };
 
 // Routes
+app.get('/', (req, res) => {
+  res.send('Daily Todo API is running. Access the frontend at <a href="http://localhost:5173">http://localhost:5173</a>');
+});
 
 // Register
 app.post('/api/auth/register', async (req, res) => {
@@ -195,5 +198,5 @@ app.patch('/api/tasks/reorder/batch', auth, async (req, res) => {
 
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
