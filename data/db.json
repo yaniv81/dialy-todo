@@ -1,0 +1,27 @@
+{
+  "users": [
+    {
+      "id": "1765305309962",
+      "email": "test2@example.com",
+      "password": "$2b$10$CkJJbBCCQsSZkXdBFkl9EeuC6nqOj8Ia7rL.oqmXAtvCCnWpC3R2i"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "1765305325396",
+      "userId": "1765305309962",
+      "text": "Test Task A",
+      "completedDates": [],
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "priority": 0
+    }
+  ]
+}
