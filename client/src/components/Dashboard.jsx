@@ -7,6 +7,24 @@ export default function Dashboard({ user, onLogout }) {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showManage, setShowManage] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showBottomBar, setShowBottomBar] = useState(true);
+
+    // Scroll listener for bottom bar
+    useEffect(() => {
+        let lastScrollY = window.scrollY;
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            if (currentScrollY > lastScrollY && currentScrollY > 50) {
+                setShowBottomBar(false);
+            } else {
+                setShowBottomBar(true);
+            }
+            lastScrollY = currentScrollY;
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // Clock
     useEffect(() => {
@@ -99,23 +117,10 @@ export default function Dashboard({ user, onLogout }) {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 max-w-3xl w-full mx-auto p-6">
+            <main className="flex-1 max-w-3xl w-full mx-auto p-6 pb-24">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold text-gray-800">Today's Focus</h2>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setShowManage(true)}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                        >
-                            Manage Tasks
-                        </button>
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition shadow-sm"
-                        >
-                            + New Task
-                        </button>
-                    </div>
+
                 </div>
 
                 <div className="space-y-3">
@@ -151,6 +156,22 @@ export default function Dashboard({ user, onLogout }) {
 
             {/* Add Task Modal */}
             {showAddModal && <AddTaskModal onClose={() => setShowAddModal(false)} onAdd={handleAddTask} />}
+
+            {/* Bottom Floating Bar */}
+            <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transform transition-transform duration-300 ease-in-out z-20 flex justify-center gap-4 ${showBottomBar ? 'translate-y-0' : 'translate-y-full'}`}>
+                <button
+                    onClick={() => setShowManage(true)}
+                    className="flex-1 max-w-xs px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition"
+                >
+                    Manage Tasks
+                </button>
+                <button
+                    onClick={() => setShowAddModal(true)}
+                    className="flex-1 max-w-xs px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-md"
+                >
+                    + New Task
+                </button>
+            </div>
         </div>
     );
 }
