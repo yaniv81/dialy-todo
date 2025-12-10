@@ -17,8 +17,13 @@ function App() {
       const res = await fetch('/api/auth/me');
       if (res.ok) {
         const data = await res.json();
-        setUser(data.user);
-        setView('dashboard');
+        if (data.user) {
+          setUser(data.user);
+          setView('dashboard');
+        } else {
+          setUser(null);
+          setView('login');
+        }
       } else {
         setUser(null);
         setView('login');

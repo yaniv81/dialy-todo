@@ -110,8 +110,19 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 // Me
-app.get('/api/auth/me', auth, (req, res) => {
-  res.json({ user: { id: req.user._id.toString(), email: req.user.email } });
+// Me - Soft auth check to avoid 401 console errors
+app.get('/api/auth/me', async (req, res) => {
+  const userId = req.cookies.userId;
+  if (!userId) return res.json({ user: null });
+  
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.json({ user: null });
+    res.json({ user: { id: user._id.toString(), email: user.email } });
+  } catch (err) {
+    console.error('Auth error:', err);
+    res.json({ user: null });
+  }
 });
 
 // Tasks
