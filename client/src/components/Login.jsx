@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../lib/axios';
 
 export default function Login({ onLogin, onSwitchToSignup }) {
     const [email, setEmail] = useState('');
@@ -11,19 +12,11 @@ export default function Login({ onLogin, onSwitchToSignup }) {
         setError('');
         setIsLoading(true);
         try {
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                onLogin(data.user);
-            } else {
-                setError(data.error || 'Login failed');
-            }
+            const res = await api.post('/api/auth/login', { email, password });
+            onLogin(res.data.user);
         } catch (err) {
-            setError('Network error');
+            const msg = err.response?.data?.error || 'Login failed';
+            setError(msg);
         } finally {
             setIsLoading(false);
         }

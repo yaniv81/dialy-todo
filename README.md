@@ -13,16 +13,18 @@ Daily Flow is a web application designed to simplify task management by focusing
 * **Recurring Tasks:** Tasks can be configured to repeat on specific **days of the week**, making them ideal for routines and habits.
 * **Intuitive Priority Control:** A dedicated screen allows users to easily drag/drop or use up/down controls to set the global priority order for all tasks.
 * **Task Completion Toggling:** Mark tasks as complete for the day with a single tap.
+*   **Secure User Authentication:** Sign-up and login with secure password hashing (using bcrypt or similar) for data protection.
+*   **Daily Focus:** The main dashboard automatically filters and displays only the tasks scheduled for the **current day**.
+*   **Recurring Tasks:** Tasks can be configured to repeat on specific **days of the week**, making them ideal for routines and habits.
+*   **Intuitive Priority Control:** A dedicated screen allows users to easily drag/drop or use up/down controls to set the global priority order for all tasks.
+*   **Task Completion Toggling:** Mark tasks as complete for the day with a single tap.
 
 ---
 
-## Technology Stack
-
-* **Frontend:** HTML/JavaScript
-* **Styling:** Tailwind CSS (Light Theme)
-* **Backend:** Node.js
-* **Database:** MongoDB (using Mongoose)
-* **Deployment:** Render.com
+## Tech Stack
+- Frontend: React + Vite + Tailwind CSS + Axios
+- Backend: Node.js + Express + MongoDB (using Mongoose)
+*   **Deployment:** Render.com
 
 ---
 

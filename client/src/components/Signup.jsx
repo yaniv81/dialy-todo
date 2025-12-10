@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../lib/axios';
 
 export default function Signup({ onLogin, onSwitchToLogin }) {
     const [email, setEmail] = useState('');
@@ -11,30 +12,18 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
         setError('');
         setIsLoading(true);
         try {
-            const res = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                // Auto login after signup
-                const loginRes = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password }),
-                });
-                const loginData = await loginRes.json();
-                if (loginRes.ok) {
-                    onLogin(loginData.user);
-                } else {
-                    onSwitchToLogin();
-                }
-            } else {
-                setError(data.error || 'Signup failed');
+            await api.post('/api/auth/register', { email, password });
+
+            // Auto login after signup
+            try {
+                const loginRes = await api.post('/api/auth/login', { email, password });
+                onLogin(loginRes.data.user);
+            } catch (loginErr) {
+                onSwitchToLogin();
             }
         } catch (err) {
-            setError('Network error');
+            const msg = err.response?.data?.error || 'Signup failed';
+            setError(msg);
         } finally {
             setIsLoading(false);
         }

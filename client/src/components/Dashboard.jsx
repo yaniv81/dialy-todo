@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ManageTasks from './ManageTasks';
+import api from '../lib/axios';
 
 export default function Dashboard({ user, onLogout }) {
     const [tasks, setTasks] = useState([]);
@@ -16,11 +17,8 @@ export default function Dashboard({ user, onLogout }) {
     // Fetch Tasks
     const fetchTasks = async () => {
         try {
-            const res = await fetch('/api/tasks');
-            if (res.ok) {
-                const data = await res.json();
-                setTasks(data);
-            }
+            const res = await api.get('/api/tasks');
+            setTasks(res.data);
         } catch (err) {
             console.error('Failed to fetch tasks', err);
         }
@@ -48,11 +46,7 @@ export default function Dashboard({ user, onLogout }) {
         setTasks(newTasks);
 
         try {
-            await fetch(`/api/tasks/${task.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ date: todayStr, completed: !isCompleted }),
-            });
+            await api.patch(`/api/tasks/${task.id}`, { date: todayStr, completed: !isCompleted });
         } catch (err) {
             console.error('Update failed', err);
             fetchTasks(); // Revert on error
@@ -61,15 +55,9 @@ export default function Dashboard({ user, onLogout }) {
 
     const handleAddTask = async (text, days) => {
         try {
-            const res = await fetch('/api/tasks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, days }),
-            });
-            if (res.ok) {
-                fetchTasks();
-                setShowAddModal(false);
-            }
+            await api.post('/api/tasks', { text, days });
+            fetchTasks();
+            setShowAddModal(false);
         } catch (err) {
             console.error('Add failed', err);
         }

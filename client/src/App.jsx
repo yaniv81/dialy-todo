@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
+import api from './lib/axios';
 import Signup from './components/Signup';
 import Dashboard from './components/Dashboard';
 
@@ -14,22 +15,21 @@ function App() {
 
   const checkSession = async () => {
     try {
-      const res = await fetch('/api/auth/me');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.user) {
-          setUser(data.user);
-          setView('dashboard');
-        } else {
-          setUser(null);
-          setView('login');
-        }
+      const res = await api.get('/api/auth/me');
+      if (res.data.user) {
+        setUser(res.data.user);
+        setView('dashboard');
       } else {
         setUser(null);
         setView('login');
       }
     } catch (err) {
-      console.error('Session check failed', err);
+      // 401 or interactions error
+      setUser(null);
+      setView('login');
+      if (err.response && err.response.status !== 401) {
+        console.error('Session check failed', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -42,7 +42,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await api.post('/api/auth/logout');
       setUser(null);
       setView('login');
     } catch (err) {

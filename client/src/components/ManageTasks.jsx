@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../lib/axios';
 
 export default function ManageTasks({ tasks, onClose, fetchTasks }) {
     // Local state for optimistic reordering?
@@ -8,7 +9,7 @@ export default function ManageTasks({ tasks, onClose, fetchTasks }) {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this task?')) return;
         try {
-            await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+            await api.delete(`/api/tasks/${id}`);
             const newTasks = localTasks.filter(t => t.id !== id);
             setLocalTasks(newTasks);
             fetchTasks();
@@ -30,11 +31,7 @@ export default function ManageTasks({ tasks, onClose, fetchTasks }) {
 
         // Send batch reorder to API
         try {
-            await fetch('/api/tasks/reorder/batch', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ taskIds: newTasks.map(t => t.id) }),
-            });
+            await api.patch('/api/tasks/reorder/batch', { taskIds: newTasks.map(t => t.id) });
             fetchTasks();
         } catch (err) {
             console.error('Reorder failed', err);
