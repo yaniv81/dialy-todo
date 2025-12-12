@@ -329,10 +329,10 @@ function AddTaskModal({ onClose, onAdd }) {
                                     key={name}
                                     type="button"
                                     onClick={() => toggleDay(index)}
-                                    className={`w-10 h-10 rounded-full text-xs font-bold transition 
+                                    className={`w-10 h-10 rounded-full text-xs font-bold transition ${repeatEveryOtherDay ? 'opacity-55' : ''} 
                                         ${days.includes(index)
-                                            ? (repeatEveryOtherDay ? 'bg-green-500 text-white' : 'bg-green-500 text-white')
-                                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}
+                                            ? (repeatEveryOtherDay ? 'bg-blue-500 text-white' : 'bg-green-500 text-white')
+                                            : (repeatEveryOtherDay ? 'bg-gray-400 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200')}
                                     `}
                                 >
                                     {name.charAt(0)}
