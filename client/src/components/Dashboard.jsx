@@ -71,12 +71,16 @@ export default function Dashboard({ user, onLogout }) {
         }
     };
 
-    const handleAddTask = async (text, days, recurring) => {
+    // ... imports and other code ...
+
+    const handleAddTask = async (text, days, recurring, frequency, startDate) => {
         try {
             await api.post('/api/tasks', {
                 text,
                 days,
                 recurring,
+                frequency, // 'daily', 'weekly', 'everyOtherDay'
+                startDate,
                 date: recurring ? undefined : new Date().toISOString().split('T')[0]
             });
             fetchTasks();
@@ -90,13 +94,33 @@ export default function Dashboard({ user, onLogout }) {
     const todayIndex = new Date().getDay(); // 0-6 Sun-Sat
     const todayStr = new Date().toISOString().split('T')[0];
 
+    // Helper to check if a date string matches today
+    const isDateToday = (dateString, todayString) => {
+        return dateString === todayString;
+    };
+
     const todaysTasks = tasks.filter(t => {
         if (t.recurring) {
+            if (t.frequency === 'everyOtherDay' && t.startDate) {
+                // Calculate difference in days between start date and today
+                const start = new Date(t.startDate);
+                const today = new Date(todayStr);
+                const diffTime = Math.abs(today - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                // Using Math.ceil might be risky with timezones, let's allow small margin or normalize to noon
+                // Better:
+                const d1 = new Date(t.startDate); d1.setHours(0, 0, 0, 0);
+                const d2 = new Date(todayStr); d2.setHours(0, 0, 0, 0);
+                const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+
+                return diff >= 0 && diff % 2 === 0;
+            }
             return t.days.includes(todayIndex);
         } else {
             return t.date === todayStr;
         }
     });
+
 
     // Sort by priority (asc means 0 is top)
     todaysTasks.sort((a, b) => (a.priority || 0) - (b.priority || 0));
@@ -191,10 +215,15 @@ function AddTaskModal({ onClose, onAdd }) {
     const [text, setText] = useState('');
     const [days, setDays] = useState([0, 1, 2, 3, 4, 5, 6]); // Default Mon-Sun
     const [doNotRepeat, setDoNotRepeat] = useState(false);
+    const [repeatEveryOtherDay, setRepeatEveryOtherDay] = useState(false);
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     const toggleDay = (index) => {
+        // Turning off special modes if user manually selects days
+        if (doNotRepeat) setDoNotRepeat(false);
+        if (repeatEveryOtherDay) setRepeatEveryOtherDay(false);
+
         if (days.includes(index)) {
             setDays(days.filter(d => d !== index));
         } else {
@@ -205,7 +234,42 @@ function AddTaskModal({ onClose, onAdd }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!text.trim()) return;
-        onAdd(text, days, !doNotRepeat);
+
+        let frequency = 'weekly';
+        let startDate = undefined;
+        let isRecurring = !doNotRepeat;
+
+        if (repeatEveryOtherDay) {
+            frequency = 'everyOtherDay';
+            startDate = new Date().toISOString().split('T')[0];
+        }
+
+        onAdd(text, days, isRecurring, frequency, startDate);
+    };
+
+    const handleEveryOtherDayToggle = () => {
+        const newValue = !repeatEveryOtherDay;
+        setRepeatEveryOtherDay(newValue);
+
+        if (newValue) {
+            setDoNotRepeat(false);
+            // static visual pattern to indicate on/off logic: Sun, Tue, Thu, Sat
+            setDays([0, 2, 4, 6]);
+        } else {
+            setDays([0, 1, 2, 3, 4, 5, 6]);
+        }
+    };
+
+    const handleDoNotRepeatToggle = () => {
+        const newValue = !doNotRepeat;
+        setDoNotRepeat(newValue);
+
+        if (newValue) {
+            setRepeatEveryOtherDay(false);
+            setDays([new Date().getDay()]);
+        } else {
+            setDays([0, 1, 2, 3, 4, 5, 6]);
+        }
     };
 
     return (
@@ -222,42 +286,46 @@ function AddTaskModal({ onClose, onAdd }) {
                         onChange={(e) => setText(e.target.value)}
                     />
 
-                    <div className="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        <span className="text-sm font-medium text-gray-700">Do not repeat</span>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                const newValue = !doNotRepeat;
-                                setDoNotRepeat(newValue);
-                                if (newValue) {
-                                    setDays([new Date().getDay()]);
-                                } else {
-                                    setDays([0, 1, 2, 3, 4, 5, 6]);
-                                }
-                            }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${doNotRepeat ? 'bg-green-500' : 'bg-gray-200'}`}
-                        >
-                            <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${doNotRepeat ? 'translate-x-6' : 'translate-x-1'}`}
-                            />
-                        </button>
+                    <div className="space-y-3 mb-6">
+                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <span className="text-sm font-medium text-gray-700">Repeat every other day</span>
+                            <button
+                                type="button"
+                                onClick={handleEveryOtherDayToggle}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${repeatEveryOtherDay ? 'bg-blue-500' : 'bg-gray-200'}`}
+                            >
+                                <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${repeatEveryOtherDay ? 'translate-x-6' : 'translate-x-1'}`}
+                                />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <span className="text-sm font-medium text-gray-700">Do not repeat</span>
+                            <button
+                                type="button"
+                                onClick={handleDoNotRepeatToggle}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${doNotRepeat ? 'bg-green-500' : 'bg-gray-200'}`}
+                            >
+                                <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${doNotRepeat ? 'translate-x-6' : 'translate-x-1'}`}
+                                />
+                            </button>
+                        </div>
                     </div>
 
                     <div className="mb-6">
-                        <label className={`block text-sm font-medium mb-2 ${doNotRepeat ? 'text-gray-400' : 'text-gray-700'}`}>Repeat On</label>
+                        <label className={`block text-sm font-medium mb-2 text-gray-700`}>Repeat On</label>
                         <div className="flex justify-between">
                             {dayNames.map((name, index) => (
                                 <button
                                     key={name}
                                     type="button"
-                                    onClick={() => !doNotRepeat && toggleDay(index)}
-                                    disabled={doNotRepeat}
+                                    onClick={() => toggleDay(index)}
                                     className={`w-10 h-10 rounded-full text-xs font-bold transition 
                                         ${days.includes(index)
-                                            ? 'bg-blue-600 text-white'
+                                            ? (repeatEveryOtherDay ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white')
                                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}
-                                        ${doNotRepeat && !days.includes(index) ? 'opacity-30 cursor-not-allowed' : ''}
-                                        ${doNotRepeat && days.includes(index) ? 'cursor-not-allowed' : ''}
                                     `}
                                 >
                                     {name.charAt(0)}

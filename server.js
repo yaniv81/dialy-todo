@@ -139,7 +139,7 @@ app.get('/api/tasks', auth, async (req, res) => {
 
 // Create Task
 app.post('/api/tasks', auth, async (req, res) => {
-  const { text, days, recurring, date } = req.body;
+  const { text, days, recurring, date, frequency, startDate } = req.body;
   // days: array of numbers 0-6 (Sun-Sat) or names. Let's use 0-6.
   
   try {
@@ -151,6 +151,8 @@ app.post('/api/tasks', auth, async (req, res) => {
       text,
       days: days || [0, 1, 2, 3, 4, 5, 6], // Default all
       recurring: recurring !== undefined ? recurring : true,
+      frequency: frequency || 'weekly',
+      startDate: startDate,
       date,
       priority: count
     });
@@ -182,6 +184,8 @@ app.patch('/api/tasks/:id', auth, async (req, res) => {
     if (req.body.priority !== undefined) task.priority = req.body.priority;
     if (req.body.text !== undefined) task.text = req.body.text;
     if (req.body.days !== undefined) task.days = req.body.days;
+    if (req.body.frequency !== undefined) task.frequency = req.body.frequency;
+    if (req.body.startDate !== undefined) task.startDate = req.body.startDate;
 
     await task.save();
     res.json(task);
