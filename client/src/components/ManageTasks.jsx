@@ -76,14 +76,20 @@ export default function ManageTasks({ tasks, onClose, fetchTasks }) {
                             <div className="flex-1">
                                 <p className="font-medium text-gray-800">{task.text}</p>
                                 <div className="flex gap-1 mt-1">
-                                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIndex) => (
-                                        <span
-                                            key={day}
-                                            className={`text-[10px] px-1.5 py-0.5 rounded ${task.days.includes(dIndex) ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-300'}`}
-                                        >
-                                            {day}
+                                    {task.recurring === false ? (
+                                        <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">
+                                            One-off ({task.date})
                                         </span>
-                                    ))}
+                                    ) : (
+                                        ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIndex) => (
+                                            <span
+                                                key={day}
+                                                className={`text-[10px] px-1.5 py-0.5 rounded ${task.days.includes(dIndex) ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-300'}`}
+                                            >
+                                                {day}
+                                            </span>
+                                        ))
+                                    )}
                                 </div>
                             </div>
 

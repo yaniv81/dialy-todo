@@ -5,6 +5,8 @@ const taskSchema = new mongoose.Schema({
   text: { type: String, required: true },
   completedDates: { type: [String], default: [] },
   days: { type: [Number], default: [0, 1, 2, 3, 4, 5, 6] },
+  recurring: { type: Boolean, default: true },
+  date: { type: String }, // Format YYYY-MM-DD for non-recurring
   priority: { type: Number, default: 0 }
 });
 

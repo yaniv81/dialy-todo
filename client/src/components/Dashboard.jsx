@@ -71,9 +71,14 @@ export default function Dashboard({ user, onLogout }) {
         }
     };
 
-    const handleAddTask = async (text, days) => {
+    const handleAddTask = async (text, days, recurring) => {
         try {
-            await api.post('/api/tasks', { text, days });
+            await api.post('/api/tasks', {
+                text,
+                days,
+                recurring,
+                date: recurring ? undefined : new Date().toISOString().split('T')[0]
+            });
             fetchTasks();
             setShowAddModal(false);
         } catch (err) {
@@ -85,7 +90,13 @@ export default function Dashboard({ user, onLogout }) {
     const todayIndex = new Date().getDay(); // 0-6 Sun-Sat
     const todayStr = new Date().toISOString().split('T')[0];
 
-    const todaysTasks = tasks.filter(t => t.days.includes(todayIndex));
+    const todaysTasks = tasks.filter(t => {
+        if (t.recurring) {
+            return t.days.includes(todayIndex);
+        } else {
+            return t.date === todayStr;
+        }
+    });
 
     // Sort by priority (asc means 0 is top)
     todaysTasks.sort((a, b) => (a.priority || 0) - (b.priority || 0));
@@ -179,6 +190,7 @@ export default function Dashboard({ user, onLogout }) {
 function AddTaskModal({ onClose, onAdd }) {
     const [text, setText] = useState('');
     const [days, setDays] = useState([0, 1, 2, 3, 4, 5, 6]); // Default Mon-Sun
+    const [doNotRepeat, setDoNotRepeat] = useState(false);
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -193,7 +205,7 @@ function AddTaskModal({ onClose, onAdd }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!text.trim()) return;
-        onAdd(text, days);
+        onAdd(text, days, !doNotRepeat);
     };
 
     return (
@@ -210,15 +222,43 @@ function AddTaskModal({ onClose, onAdd }) {
                         onChange={(e) => setText(e.target.value)}
                     />
 
+                    <div className="mb-4 flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <span className="text-sm font-medium text-gray-700">Do not repeat</span>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const newValue = !doNotRepeat;
+                                setDoNotRepeat(newValue);
+                                if (newValue) {
+                                    setDays([new Date().getDay()]);
+                                } else {
+                                    setDays([0, 1, 2, 3, 4, 5, 6]);
+                                }
+                            }}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${doNotRepeat ? 'bg-green-500' : 'bg-gray-200'}`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${doNotRepeat ? 'translate-x-6' : 'translate-x-1'}`}
+                            />
+                        </button>
+                    </div>
+
                     <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Repeat On</label>
+                        <label className={`block text-sm font-medium mb-2 ${doNotRepeat ? 'text-gray-400' : 'text-gray-700'}`}>Repeat On</label>
                         <div className="flex justify-between">
                             {dayNames.map((name, index) => (
                                 <button
                                     key={name}
                                     type="button"
-                                    onClick={() => toggleDay(index)}
-                                    className={`w-10 h-10 rounded-full text-xs font-bold transition ${days.includes(index) ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                    onClick={() => !doNotRepeat && toggleDay(index)}
+                                    disabled={doNotRepeat}
+                                    className={`w-10 h-10 rounded-full text-xs font-bold transition 
+                                        ${days.includes(index)
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}
+                                        ${doNotRepeat && !days.includes(index) ? 'opacity-30 cursor-not-allowed' : ''}
+                                        ${doNotRepeat && days.includes(index) ? 'cursor-not-allowed' : ''}
+                                    `}
                                 >
                                     {name.charAt(0)}
                                 </button>

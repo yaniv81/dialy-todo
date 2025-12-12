@@ -139,7 +139,7 @@ app.get('/api/tasks', auth, async (req, res) => {
 
 // Create Task
 app.post('/api/tasks', auth, async (req, res) => {
-  const { text, days } = req.body;
+  const { text, days, recurring, date } = req.body;
   // days: array of numbers 0-6 (Sun-Sat) or names. Let's use 0-6.
   
   try {
@@ -150,6 +150,8 @@ app.post('/api/tasks', auth, async (req, res) => {
       userId: req.user._id,
       text,
       days: days || [0, 1, 2, 3, 4, 5, 6], // Default all
+      recurring: recurring !== undefined ? recurring : true,
+      date,
       priority: count
     });
     
