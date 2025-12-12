@@ -4,6 +4,7 @@ import api from '../lib/axios';
 
 export default function Dashboard({ user, onLogout }) {
     const [tasks, setTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showManage, setShowManage] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -39,6 +40,8 @@ export default function Dashboard({ user, onLogout }) {
             setTasks(res.data);
         } catch (err) {
             console.error('Failed to fetch tasks', err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -159,7 +162,11 @@ export default function Dashboard({ user, onLogout }) {
                 </div>
 
                 <div className="space-y-3">
-                    {todaysTasks.length === 0 ? (
+                    {loading ? (
+                        <div className="text-center py-12 text-gray-500">
+                            Loading tasks...
+                        </div>
+                    ) : todaysTasks.length === 0 ? (
                         <div className="text-center py-12 text-gray-500 bg-white rounded-lg border border-dashed border-gray-300">
                             No tasks scheduled for today.
                             <br />
