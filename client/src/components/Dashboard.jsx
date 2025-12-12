@@ -292,7 +292,7 @@ function AddTaskModal({ onClose, onAdd }) {
                             <button
                                 type="button"
                                 onClick={handleEveryOtherDayToggle}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${repeatEveryOtherDay ? 'bg-blue-500' : 'bg-gray-200'}`}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${repeatEveryOtherDay ? 'bg-green-500' : 'bg-gray-200'}`}
                             >
                                 <span
                                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${repeatEveryOtherDay ? 'translate-x-6' : 'translate-x-1'}`}
@@ -324,7 +324,7 @@ function AddTaskModal({ onClose, onAdd }) {
                                     onClick={() => toggleDay(index)}
                                     className={`w-10 h-10 rounded-full text-xs font-bold transition 
                                         ${days.includes(index)
-                                            ? (repeatEveryOtherDay ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white')
+                                            ? (repeatEveryOtherDay ? 'bg-green-500 text-white' : 'bg-green-500 text-white')
                                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}
                                     `}
                                 >
@@ -336,7 +336,7 @@ function AddTaskModal({ onClose, onAdd }) {
 
                     <div className="flex justify-end gap-2">
                         <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                        <button type="submit" disabled={!text.trim()} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">Add Task</button>
+                        <button type="submit" disabled={!text.trim()} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-md cursor-pointer">Add Task</button>
                     </div>
                 </form>
             </div>
