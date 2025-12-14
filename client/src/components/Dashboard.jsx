@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import ManageTasks from './ManageTasks';
 import api from '../lib/axios';
 
+// Helper to get local date string YYYY-MM-DD
+const getLocalDateStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 export default function Dashboard({ user, onLogout }) {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -50,7 +59,7 @@ export default function Dashboard({ user, onLogout }) {
     }, []);
 
     const handleTaskComplete = async (task) => {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getLocalDateStr();
         const isCompleted = task.completedDates.includes(todayStr);
 
         // Optimistic update
@@ -84,7 +93,7 @@ export default function Dashboard({ user, onLogout }) {
                 recurring,
                 frequency, // 'daily', 'weekly', 'everyOtherDay'
                 startDate,
-                date: recurring ? undefined : new Date().toISOString().split('T')[0]
+                date: recurring ? undefined : getLocalDateStr()
             });
             fetchTasks();
             setShowAddModal(false);
@@ -95,7 +104,7 @@ export default function Dashboard({ user, onLogout }) {
 
     // Filter for today
     const todayIndex = new Date().getDay(); // 0-6 Sun-Sat
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr();
 
     // Helper to check if a date string matches today
     const isDateToday = (dateString, todayString) => {
@@ -248,7 +257,7 @@ function AddTaskModal({ onClose, onAdd }) {
 
         if (repeatEveryOtherDay) {
             frequency = 'everyOtherDay';
-            startDate = new Date().toISOString().split('T')[0];
+            startDate = getLocalDateStr();
         }
 
         onAdd(text, days, isRecurring, frequency, startDate);
