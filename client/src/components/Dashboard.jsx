@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ManageTasks from './ManageTasks';
 import api from '../lib/axios';
 
@@ -35,6 +35,74 @@ export default function Dashboard({ user, onLogout }) {
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    // Alert System
+    const notifiedMap = useRef(new Set());
+
+    useEffect(() => {
+        const checkAlerts = async () => {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const timeStr = `${hours}:${minutes}`;
+            const todayStr = getLocalDateStr();
+            const dayIndex = now.getDay();
+
+            if (!('serviceWorker' in navigator)) return;
+            const registration = await navigator.serviceWorker.ready;
+
+            tasks.forEach(task => {
+                if (!task.alertEnabled || !task.alertTime) return;
+
+                // Check Time
+                if (task.alertTime !== timeStr) return;
+
+                // Check recurrence/day
+                let isForToday = false;
+                if (task.recurring) {
+                    if (task.frequency === 'everyOtherDay' && task.startDate) {
+                        const d1 = new Date(task.startDate); d1.setHours(0, 0, 0, 0);
+                        const d2 = new Date(todayStr); d2.setHours(0, 0, 0, 0);
+                        const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+                        isForToday = (diff >= 0 && diff % 2 === 0);
+                    } else {
+                        isForToday = task.days.includes(dayIndex);
+                    }
+                } else {
+                    isForToday = (task.date === todayStr);
+                }
+
+                if (!isForToday) return;
+
+                // Check duplicate
+                const key = `${task.id}-${todayStr}-${timeStr}`;
+                if (notifiedMap.current.has(key)) return;
+
+                // TRIGGER
+                notifiedMap.current.add(key);
+
+                // Notification Options
+                const options = {
+                    body: task.text,
+                    // icon: '/vite.svg', 
+                    vibrate: task.alertMode !== 'sound' ? [200, 100, 200] : [],
+                    tag: key,
+                    silent: task.alertMode === 'vibration'
+                };
+
+                registration.showNotification('Task Alert', options);
+
+                // Fallbacks
+                if (task.alertMode !== 'sound') {
+                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                }
+            });
+        };
+
+        const interval = setInterval(checkAlerts, 10000); // Check every 10s
+        checkAlerts(); // Run immediately too
+        return () => clearInterval(interval);
+    }, [tasks]);
 
     // Clock
     useEffect(() => {
@@ -85,7 +153,7 @@ export default function Dashboard({ user, onLogout }) {
 
     // ... imports and other code ...
 
-    const handleAddTask = async (text, days, recurring, frequency, startDate) => {
+    const handleAddTask = async (text, days, recurring, frequency, startDate, alertEnabled, alertTime, alertMode) => {
         try {
             await api.post('/api/tasks', {
                 text,
@@ -93,7 +161,10 @@ export default function Dashboard({ user, onLogout }) {
                 recurring,
                 frequency, // 'daily', 'weekly', 'everyOtherDay'
                 startDate,
-                date: recurring ? undefined : getLocalDateStr()
+                date: recurring ? undefined : getLocalDateStr(),
+                alertEnabled,
+                alertTime,
+                alertMode
             });
             fetchTasks();
             setShowAddModal(false);
@@ -233,6 +304,12 @@ function AddTaskModal({ onClose, onAdd }) {
     const [doNotRepeat, setDoNotRepeat] = useState(false);
     const [repeatEveryOtherDay, setRepeatEveryOtherDay] = useState(false);
 
+    // Alert State
+    const [alertEnabled, setAlertEnabled] = useState(false);
+    const [alertTime, setAlertTime] = useState('');
+    const [alertMode, setAlertMode] = useState('both');
+    const [showPermissionPrompt, setShowPermissionPrompt] = useState(false);
+
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     const toggleDay = (index) => {
@@ -260,7 +337,7 @@ function AddTaskModal({ onClose, onAdd }) {
             startDate = getLocalDateStr();
         }
 
-        onAdd(text, days, isRecurring, frequency, startDate);
+        onAdd(text, days, isRecurring, frequency, startDate, alertEnabled, alertTime, alertMode);
     };
 
     const handleEveryOtherDayToggle = () => {
@@ -285,6 +362,41 @@ function AddTaskModal({ onClose, onAdd }) {
             setDays([new Date().getDay()]);
         } else {
             setDays([0, 1, 2, 3, 4, 5, 6]);
+        }
+    };
+
+    const handleAlertToggle = () => {
+        if (!alertEnabled) {
+            // User wants to enable
+            if (!('Notification' in window)) {
+                alert('This browser does not support desktop notifications');
+                return;
+            }
+
+            if (Notification.permission === 'granted') {
+                setAlertEnabled(true);
+            } else if (Notification.permission === 'denied') {
+                alert('Notifications are blocked. Please enable them in your browser settings.');
+            } else {
+                // Default - show contextual prompt
+                setShowPermissionPrompt(true);
+            }
+        } else {
+            // User wants to disable
+            setAlertEnabled(false);
+            setShowPermissionPrompt(false);
+            setAlertTime('');
+        }
+    };
+
+    const requestPermission = async () => {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            setShowPermissionPrompt(false);
+            setAlertEnabled(true);
+        } else {
+            setShowPermissionPrompt(false);
+            alert('Permission denied. Cannot set alerts.');
         }
     };
 
@@ -328,6 +440,94 @@ function AddTaskModal({ onClose, onAdd }) {
                                 />
                             </button>
                         </div>
+
+                        {/* Alert Toggle */}
+                        <div className="flex flex-col bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-700">Set Alert Time</span>
+                                <button
+                                    type="button"
+                                    onClick={handleAlertToggle}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${alertEnabled ? 'bg-green-500' : 'bg-gray-200'}`}
+                                >
+                                    <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${alertEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+                                    />
+                                </button>
+                            </div>
+
+                            {/* Contextual Permission Prompt */}
+                            {showPermissionPrompt && (
+                                <div className="mt-3 p-3 bg-blue-50 text-blue-800 text-sm rounded border border-blue-100">
+                                    <p className="mb-2">To send you an alert at your chosen time, we need system permission.</p>
+                                    <button
+                                        type="button"
+                                        onClick={requestPermission}
+                                        className="bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-blue-700"
+                                    >
+                                        Enable Notifications
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Alert Settings with Slide Down Animation */}
+                            <div className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${alertEnabled ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                <div className="overflow-hidden">
+                                    <div className={`space-y-3 pl-1 border-gray-200 transition-all duration-300 ${alertEnabled ? 'pt-3 mt-3 border-t opacity-100' : 'pt-0 mt-0 border-none opacity-0'}`}>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Time</label>
+                                            <input
+                                                type="time"
+                                                value={alertTime}
+                                                onChange={(e) => setAlertTime(e.target.value)}
+                                                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
+                                                required={alertEnabled}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Mode</label>
+                                            <div className="flex space-x-4">
+                                                <label className="flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="alertMode"
+                                                        value="vibration"
+                                                        checked={alertMode === 'vibration'}
+                                                        onChange={(e) => setAlertMode(e.target.value)}
+                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
+                                                    />
+                                                    <span className="ml-2 text-sm text-gray-700">Vibrate</span>
+                                                </label>
+                                                <label className="flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="alertMode"
+                                                        value="sound"
+                                                        checked={alertMode === 'sound'}
+                                                        onChange={(e) => setAlertMode(e.target.value)}
+                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
+                                                    />
+                                                    <span className="ml-2 text-sm text-gray-700">Sound</span>
+                                                </label>
+                                                <label className="flex items-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="alertMode"
+                                                        value="both"
+                                                        checked={alertMode === 'both'}
+                                                        onChange={(e) => setAlertMode(e.target.value)}
+                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
+                                                    />
+                                                    <span className="ml-2 text-sm text-gray-700">Both</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <div className="mb-6">

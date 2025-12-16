@@ -9,7 +9,10 @@ const taskSchema = new mongoose.Schema({
   frequency: { type: String, enum: ['daily', 'weekly', 'everyOtherDay'], default: 'weekly' },
   startDate: { type: String }, // Format YYYY-MM-DD
   date: { type: String }, // Format YYYY-MM-DD for non-recurring
-  priority: { type: Number, default: 0 }
+  priority: { type: Number, default: 0 },
+  alertEnabled: { type: Boolean, default: false },
+  alertTime: { type: String }, // Format HH:mm
+  alertMode: { type: String, enum: ['vibration', 'sound', 'both'], default: 'both' }
 });
 
 // Map _id to id for frontend compatibility

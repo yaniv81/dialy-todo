@@ -139,7 +139,7 @@ app.get('/api/tasks', auth, async (req, res) => {
 
 // Create Task
 app.post('/api/tasks', auth, async (req, res) => {
-  const { text, days, recurring, date, frequency, startDate } = req.body;
+  const { text, days, recurring, date, frequency, startDate, alertEnabled, alertTime, alertMode } = req.body;
   // days: array of numbers 0-6 (Sun-Sat) or names. Let's use 0-6.
   
   try {
@@ -154,7 +154,10 @@ app.post('/api/tasks', auth, async (req, res) => {
       frequency: frequency || 'weekly',
       startDate: startDate,
       date,
-      priority: count
+      priority: count,
+      alertEnabled,
+      alertTime,
+      alertMode
     });
     
     await newTask.save();
@@ -186,6 +189,9 @@ app.patch('/api/tasks/:id', auth, async (req, res) => {
     if (req.body.days !== undefined) task.days = req.body.days;
     if (req.body.frequency !== undefined) task.frequency = req.body.frequency;
     if (req.body.startDate !== undefined) task.startDate = req.body.startDate;
+    if (req.body.alertEnabled !== undefined) task.alertEnabled = req.body.alertEnabled;
+    if (req.body.alertTime !== undefined) task.alertTime = req.body.alertTime;
+    if (req.body.alertMode !== undefined) task.alertMode = req.body.alertMode;
 
     await task.save();
     res.json(task);
