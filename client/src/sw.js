@@ -9,7 +9,18 @@ cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
 self.addEventListener('push', function(event) {
-    // Keep this empty for now as we are triggering notifications from the client
+    if (event.data) {
+        const data = event.data.json();
+        const options = {
+            body: data.body,
+            icon: data.icon || '/vite.svg',
+            vibrate: [200, 100, 200],
+            data: { url: data.url || '/' }
+        };
+        event.waitUntil(
+            self.registration.showNotification(data.title || 'New Task', options)
+        );
+    }
 });
 
 self.addEventListener('notificationclick', function(event) {

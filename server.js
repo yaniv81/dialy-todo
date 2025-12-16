@@ -10,8 +10,17 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import User from './models/User.js';
 import Task from './models/Task.js';
+import Subscription from './models/Subscription.js';
+import webpush from 'web-push';
+import cron from 'node-cron';
 
 dotenv.config();
+
+webpush.setVapidDetails(
+    'mailto:example@yourdomain.org',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -233,7 +242,133 @@ app.patch('/api/tasks/reorder/batch', auth, async (req, res) => {
 });
 
 
-// The "catchall" handler: for any request that doesn't
+// Notifications
+
+// Get VAPID Public Key
+app.get('/api/config/vapid-public-key', (req, res) => {
+    res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
+});
+
+// Subscribe to Notifications
+app.post('/api/notifications/subscribe', auth, async (req, res) => {
+    const { subscription, timezone } = req.body;
+    
+    try {
+        // Update user timezone
+        if (timezone) {
+            await User.findByIdAndUpdate(req.user._id, { timezone });
+        }
+
+        // Save subscription
+        // Check if exists to avoid duplicates
+        const existing = await Subscription.findOne({ endpoint: subscription.endpoint });
+        if (!existing) {
+            const newSub = new Subscription({
+                userId: req.user._id,
+                endpoint: subscription.endpoint,
+                keys: subscription.keys,
+                userAgent: req.headers['user-agent']
+            });
+            await newSub.save();
+        }
+
+        res.status(201).json({ message: 'Subscribed' });
+    } catch (err) {
+        console.error('Subscription error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Cron Job for Alerts (Every Minute)
+cron.schedule('* * * * *', async () => {
+    try {
+        // 1. Get all users with subscriptions
+        // Optimization: distinct users from Subscription
+        const userIds = await Subscription.distinct('userId');
+        
+        for (const userId of userIds) {
+            const user = await User.findById(userId);
+            if (!user) continue;
+
+            const timezone = user.timezone || 'UTC';
+            const now = new Date();
+            const userTime = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+            
+            const hours = String(userTime.getHours()).padStart(2, '0');
+            const minutes = String(userTime.getMinutes()).padStart(2, '0');
+            const timeStr = `${hours}:${minutes}`;
+            
+            // Get local date string YYYY-MM-DD for checking recurrence
+            const year = userTime.getFullYear();
+            const month = String(userTime.getMonth() + 1).padStart(2, '0');
+            const day = String(userTime.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+            const dayIndex = userTime.getDay(); // 0-6
+
+            // 2. Find matching tasks
+            const tasks = await Task.find({ 
+                userId: user._id, 
+                alertEnabled: true, 
+                alertTime: timeStr 
+            });
+
+            for (const task of tasks) {
+                // Check recurrence
+                let isForToday = false;
+                if (task.recurring) {
+                    if (task.frequency === 'everyOtherDay' && task.startDate) {
+                         const d1 = new Date(task.startDate); d1.setHours(0,0,0,0);
+                         const d2 = new Date(todayStr); d2.setHours(0,0,0,0);
+                         // We need robust diffing. Using simplified diff.
+                         // Ensure dates are parsed correctly in context of their timezone, 
+                         // but standard JS Date might convert to local.
+                         // Simplest is treat YYYY-MM-DD as UTC to diff days.
+                         const u1 = Date.parse(task.startDate);
+                         const u2 = Date.parse(todayStr);
+                         const diff = Math.round((u2 - u1) / (86400000));
+                         isForToday = (diff >= 0 && diff % 2 === 0);
+                    } else {
+                        isForToday = task.days.includes(dayIndex);
+                    }
+                } else {
+                    isForToday = (task.date === todayStr);
+                }
+
+                if (isForToday) {
+                    // Send Notification
+                    const payload = JSON.stringify({
+                        title: 'Task Alert',
+                        body: task.text,
+                        icon: '/vite.svg', // Assuming public path
+                        // Custom data if needed
+                        url: '/'
+                    });
+
+                    const subs = await Subscription.find({ userId: user._id });
+                    for (const sub of subs) {
+                        const pushSubscription = {
+                            endpoint: sub.endpoint,
+                            keys: sub.keys
+                        };
+                        
+                        webpush.sendNotification(pushSubscription, payload)
+                            .catch(err => {
+                                console.error('Push error', err);
+                                if (err.statusCode === 410 || err.statusCode === 404) {
+                                    // Expired subscription
+                                    Subscription.deleteOne({ _id: sub._id }).catch(console.error);
+                                }
+                            });
+                    }
+                }
+            }
+        }
+
+    } catch (err) {
+        console.error('Cron error:', err);
+    }
+});
+
 // match one above, send back React's index.html file.
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'client/dist/index.html'));

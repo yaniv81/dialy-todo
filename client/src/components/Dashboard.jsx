@@ -11,6 +11,22 @@ const getLocalDateStr = () => {
     return `${year}-${month}-${day}`;
 };
 
+// Helper for VAPID
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
 export default function Dashboard({ user, onLogout }) {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -36,73 +52,38 @@ export default function Dashboard({ user, onLogout }) {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Alert System
-    const notifiedMap = useRef(new Set());
+    // Push Notifications
+    const subscribeToPush = async () => {
+        if (!('serviceWorker' in navigator)) return;
 
-    useEffect(() => {
-        const checkAlerts = async () => {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const timeStr = `${hours}:${minutes}`;
-            const todayStr = getLocalDateStr();
-            const dayIndex = now.getDay();
-
-            if (!('serviceWorker' in navigator)) return;
+        try {
             const registration = await navigator.serviceWorker.ready;
 
-            tasks.forEach(task => {
-                if (!task.alertEnabled || !task.alertTime) return;
+            // Get public key
+            const res = await api.get('/api/config/vapid-public-key');
+            const convertedVapidKey = urlBase64ToUint8Array(res.data.publicKey);
 
-                // Check Time
-                if (task.alertTime !== timeStr) return;
-
-                // Check recurrence/day
-                let isForToday = false;
-                if (task.recurring) {
-                    if (task.frequency === 'everyOtherDay' && task.startDate) {
-                        const d1 = new Date(task.startDate); d1.setHours(0, 0, 0, 0);
-                        const d2 = new Date(todayStr); d2.setHours(0, 0, 0, 0);
-                        const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
-                        isForToday = (diff >= 0 && diff % 2 === 0);
-                    } else {
-                        isForToday = task.days.includes(dayIndex);
-                    }
-                } else {
-                    isForToday = (task.date === todayStr);
-                }
-
-                if (!isForToday) return;
-
-                // Check duplicate
-                const key = `${task.id}-${todayStr}-${timeStr}`;
-                if (notifiedMap.current.has(key)) return;
-
-                // TRIGGER
-                notifiedMap.current.add(key);
-
-                // Notification Options
-                const options = {
-                    body: task.text,
-                    // icon: '/vite.svg', 
-                    vibrate: task.alertMode !== 'sound' ? [200, 100, 200] : [],
-                    tag: key,
-                    silent: task.alertMode === 'vibration'
-                };
-
-                registration.showNotification('Task Alert', options);
-
-                // Fallbacks
-                if (task.alertMode !== 'sound') {
-                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                }
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedVapidKey
             });
-        };
 
-        const interval = setInterval(checkAlerts, 10000); // Check every 10s
-        checkAlerts(); // Run immediately too
-        return () => clearInterval(interval);
-    }, [tasks]);
+            // Send to server
+            await api.post('/api/notifications/subscribe', {
+                subscription: subscription,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            });
+            console.log('Subscribed to push');
+        } catch (err) {
+            console.error('Push subscription failed', err);
+        }
+    };
+
+    useEffect(() => {
+        if (Notification.permission === 'granted') {
+            subscribeToPush();
+        }
+    }, []);
 
     // Clock
     useEffect(() => {
@@ -277,7 +258,7 @@ export default function Dashboard({ user, onLogout }) {
             </main>
 
             {/* Add Task Modal */}
-            {showAddModal && <AddTaskModal onClose={() => setShowAddModal(false)} onAdd={handleAddTask} />}
+            {showAddModal && <AddTaskModal onClose={() => setShowAddModal(false)} onAdd={handleAddTask} onSubscribe={subscribeToPush} />}
 
             {/* Bottom Floating Bar */}
             <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transform transition-transform duration-300 ease-in-out z-20 flex justify-center gap-4 ${showBottomBar ? 'translate-y-0' : 'translate-y-full'}`}>
@@ -298,7 +279,7 @@ export default function Dashboard({ user, onLogout }) {
     );
 }
 
-function AddTaskModal({ onClose, onAdd }) {
+function AddTaskModal({ onClose, onAdd, onSubscribe }) {
     const [text, setText] = useState('');
     const [days, setDays] = useState([0, 1, 2, 3, 4, 5, 6]); // Default Mon-Sun
     const [doNotRepeat, setDoNotRepeat] = useState(false);
@@ -375,6 +356,7 @@ function AddTaskModal({ onClose, onAdd }) {
 
             if (Notification.permission === 'granted') {
                 setAlertEnabled(true);
+                if (onSubscribe) onSubscribe();
             } else if (Notification.permission === 'denied') {
                 alert('Notifications are blocked. Please enable them in your browser settings.');
             } else {
@@ -394,6 +376,7 @@ function AddTaskModal({ onClose, onAdd }) {
         if (permission === 'granted') {
             setShowPermissionPrompt(false);
             setAlertEnabled(true);
+            if (onSubscribe) onSubscribe();
         } else {
             setShowPermissionPrompt(false);
             alert('Permission denied. Cannot set alerts.');
