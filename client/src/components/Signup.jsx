@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../lib/axios';
+import ThemeToggle from './ThemeToggle';
 
 export default function Signup({ onLogin, onSwitchToLogin }) {
     const [email, setEmail] = useState('');
@@ -30,31 +31,34 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
-                <h1 className="text-3xl font-bold text-center text-gray-800">Create Account</h1>
-                <p className="text-center text-gray-500">Join Daily Flow to organize your life</p>
+        <div className="flex items-center justify-center min-h-screen px-4 relative">
+            <div className="absolute top-4 right-4">
+                <ThemeToggle />
+            </div>
+            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg dark:bg-gray-800 transition-colors duration-200">
+                <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white">Create Account</h1>
+                <p className="text-center text-gray-500 dark:text-gray-400">Join Daily Flow to organize your life</p>
 
                 {error && <div className="p-3 text-sm text-red-600 bg-red-100 rounded">{error}</div>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
                         <input
                             type="email"
                             required
-                            className="w-full px-4 py-2 mt-1 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                            className="w-full px-4 py-2 mt-1 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={isLoading}
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Password</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
                         <input
                             type="password"
                             required
-                            className="w-full px-4 py-2 mt-1 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                            className="w-full px-4 py-2 mt-1 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             disabled={isLoading}
@@ -76,9 +80,9 @@ export default function Signup({ onLogin, onSwitchToLogin }) {
                     </button>
                 </form>
 
-                <div className="text-center text-sm text-gray-600">
+                <div className="text-center text-sm text-gray-600 dark:text-gray-400">
                     Already have an account?{' '}
-                    <button onClick={onSwitchToLogin} className="font-medium text-blue-600 hover:text-blue-500">
+                    <button onClick={onSwitchToLogin} className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
                         Log in
                     </button>
                 </div>

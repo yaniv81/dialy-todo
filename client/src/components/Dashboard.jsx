@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ManageTasks from './ManageTasks';
 import api from '../lib/axios';
+import ThemeToggle from './ThemeToggle';
 
 // Helper to get local date string YYYY-MM-DD
 const getLocalDateStr = () => {
@@ -198,40 +199,42 @@ export default function Dashboard({ user, onLogout }) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen bg-gray-50 flex flex-col dark:bg-gray-900 dark:text-gray-100 transition-colors duration-200">
             {/* Header */}
-            <header className="bg-white shadow px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+            <header className="bg-white shadow px-6 py-4 flex justify-between items-center sticky top-0 z-10 dark:bg-gray-800 dark:border-b dark:border-gray-700">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Daily Flow</h1>
-                    <p className="text-gray-500 text-sm">
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Daily Flow</h1>
+                    <p className="text-gray-500 text-sm dark:text-gray-400">
                         {currentTime.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
                         <span className="mx-2">•</span>
                         {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium text-gray-700 hidden sm:block">{user.email}</span>
-                    <button onClick={onLogout} className="text-sm text-red-600 hover:text-red-800">Logout</button>
+                    <ThemeToggle />
+                    <span className="text-sm font-medium text-gray-700 hidden sm:block dark:text-gray-300">{user.email}</span>
+                    <button onClick={onLogout} className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">Logout</button>
                 </div>
             </header>
 
+
             {/* Main Content */}
-            <main className="flex-1 max-w-3xl w-full mx-auto p-6 pb-24">
+            <main className="flex-1 max-w-3xl w-full mx-auto p-6 pb-24 dark:text-gray-100">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-semibold text-gray-800">Today's Focus</h2>
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Today's Focus</h2>
 
                 </div>
 
                 <div className="space-y-3">
                     {loading ? (
-                        <div className="text-center py-12 text-gray-500">
+                        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                             Loading tasks...
                         </div>
                     ) : todaysTasks.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500 bg-white rounded-lg border border-dashed border-gray-300">
+                        <div className="text-center py-12 text-gray-500 bg-white rounded-lg border border-dashed border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400">
                             No tasks scheduled for today.
                             <br />
-                            <button onClick={() => setShowAddModal(true)} className="text-blue-600 hover:underline mt-2">
+                            <button onClick={() => setShowAddModal(true)} className="text-blue-600 hover:underline mt-2 dark:text-blue-400">
                                 Add a task
                             </button>
                         </div>
@@ -242,12 +245,12 @@ export default function Dashboard({ user, onLogout }) {
                                 <div
                                     key={task.id}
                                     onClick={() => handleTaskComplete(task)}
-                                    className={`flex items-center p-4 bg-white rounded-lg shadow-sm cursor-pointer transition transform hover:scale-[1.01] ${isCompleted ? 'opacity-50' : 'hover:shadow-md'}`}
+                                    className={`flex items-center p-4 bg-white rounded-lg shadow-sm cursor-pointer transition transform hover:scale-[1.01] dark:bg-gray-800 dark:shadow-none dark:border dark:border-gray-700 ${isCompleted ? 'opacity-50' : 'hover:shadow-md'}`}
                                 >
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition ${isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition ${isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-300 dark:border-gray-500'}`}>
                                         {isCompleted && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                     </div>
-                                    <span className={`text-lg font-medium flex-1 ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                                    <span className={`text-lg font-medium flex-1 ${isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'}`}>
                                         {task.text}
                                     </span>
                                 </div>
@@ -261,16 +264,16 @@ export default function Dashboard({ user, onLogout }) {
             {showAddModal && <AddTaskModal onClose={() => setShowAddModal(false)} onAdd={handleAddTask} onSubscribe={subscribeToPush} />}
 
             {/* Bottom Floating Bar */}
-            <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transform transition-transform duration-300 ease-in-out z-20 flex justify-center gap-4 ${showBottomBar ? 'translate-y-0' : 'translate-y-full'}`}>
+            <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transform transition-transform duration-300 ease-in-out z-20 flex justify-center gap-4 dark:bg-gray-800 dark:border-gray-700 ${showBottomBar ? 'translate-y-0' : 'translate-y-full'}`}>
                 <button
                     onClick={() => setShowManage(true)}
-                    className="flex-1 max-w-xs px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition"
+                    className="flex-1 max-w-xs px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
                 >
                     Manage Tasks
                 </button>
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className="flex-1 max-w-xs px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-md"
+                    className="flex-1 max-w-xs px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-md dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
                     + New Task
                 </button>
@@ -385,12 +388,12 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 dark:bg-gray-800 dark:text-white">
                 <h3 className="text-xl font-bold mb-4">Add New Task</h3>
                 <form onSubmit={handleSubmit}>
                     <input
                         type="text"
-                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none mb-4"
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none mb-4 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                         placeholder="What needs to be done?"
                         value={text}
                         autoFocus={typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches}
@@ -398,8 +401,8 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                     />
 
                     <div className="space-y-3 mb-6">
-                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100">
-                            <span className="text-sm font-medium text-gray-700">Repeat every other day</span>
+                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100 dark:bg-gray-700 dark:border-gray-600">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Repeat every other day</span>
                             <button
                                 type="button"
                                 onClick={handleEveryOtherDayToggle}
@@ -411,8 +414,8 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                             </button>
                         </div>
 
-                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100">
-                            <span className="text-sm font-medium text-gray-700">Do not repeat</span>
+                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100 dark:bg-gray-700 dark:border-gray-600">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Do not repeat</span>
                             <button
                                 type="button"
                                 onClick={handleDoNotRepeatToggle}
@@ -425,9 +428,9 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                         </div>
 
                         {/* Alert Toggle */}
-                        <div className="flex flex-col bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <div className="flex flex-col bg-gray-50 p-3 rounded-lg border border-gray-100 dark:bg-gray-700 dark:border-gray-600">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-700">Set Alert Time</span>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Set Alert Time</span>
                                 <button
                                     type="button"
                                     onClick={handleAlertToggle}
@@ -458,18 +461,18 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                                 <div className="overflow-hidden">
                                     <div className={`space-y-3 pl-1 border-gray-200 transition-all duration-300 ${alertEnabled ? 'pt-3 mt-3 border-t opacity-100' : 'pt-0 mt-0 border-none opacity-0'}`}>
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Time</label>
+                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 dark:text-gray-400">Time</label>
                                             <input
                                                 type="time"
                                                 value={alertTime}
                                                 onChange={(e) => setAlertTime(e.target.value)}
-                                                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
+                                                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                                                 required={alertEnabled}
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Mode</label>
+                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 dark:text-gray-400">Mode</label>
                                             <div className="flex space-x-4">
                                                 <label className="flex items-center">
                                                     <input
@@ -478,9 +481,9 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                                                         value="vibration"
                                                         checked={alertMode === 'vibration'}
                                                         onChange={(e) => setAlertMode(e.target.value)}
-                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
+                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:bg-gray-600 dark:border-gray-500"
                                                     />
-                                                    <span className="ml-2 text-sm text-gray-700">Vibrate</span>
+                                                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Vibrate</span>
                                                 </label>
                                                 <label className="flex items-center">
                                                     <input
@@ -489,9 +492,9 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                                                         value="sound"
                                                         checked={alertMode === 'sound'}
                                                         onChange={(e) => setAlertMode(e.target.value)}
-                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
+                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:bg-gray-600 dark:border-gray-500"
                                                     />
-                                                    <span className="ml-2 text-sm text-gray-700">Sound</span>
+                                                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Sound</span>
                                                 </label>
                                                 <label className="flex items-center">
                                                     <input
@@ -500,9 +503,9 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                                                         value="both"
                                                         checked={alertMode === 'both'}
                                                         onChange={(e) => setAlertMode(e.target.value)}
-                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
+                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:bg-gray-600 dark:border-gray-500"
                                                     />
-                                                    <span className="ml-2 text-sm text-gray-700">Both</span>
+                                                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Both</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -514,7 +517,7 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                     </div>
 
                     <div className="mb-6">
-                        <label className={`block text-sm font-medium mb-2 text-gray-700`}>Repeat On</label>
+                        <label className={`block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200`}>Repeat On</label>
                         <div className="flex justify-between">
                             {dayNames.map((name, index) => (
                                 <button
@@ -534,8 +537,8 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                     </div>
 
                     <div className="flex justify-end gap-2">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                        <button type="submit" disabled={!text.trim()} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-md cursor-pointer">Add Task</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded dark:text-gray-300 dark:hover:bg-gray-700">Cancel</button>
+                        <button type="submit" disabled={!text.trim()} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-md cursor-pointer dark:bg-blue-500 dark:hover:bg-blue-600">Add Task</button>
                     </div>
                 </form>
             </div>

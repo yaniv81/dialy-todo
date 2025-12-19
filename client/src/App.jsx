@@ -3,6 +3,7 @@ import Login from './components/Login';
 import api from './lib/axios';
 import Signup from './components/Signup';
 import Dashboard from './components/Dashboard';
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -51,23 +52,25 @@ function App() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
     </div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-      {user ? (
-        <Dashboard user={user} onLogout={handleLogout} />
-      ) : (
-        view === 'login' ? (
-          <Login onLogin={handleLogin} onSwitchToSignup={() => setView('signup')} />
+    <ThemeProvider>
+      <div className="min-h-screen bg-gray-50 text-gray-900 font-sans dark:bg-gray-900 dark:text-gray-100 transition-colors duration-200">
+        {user ? (
+          <Dashboard user={user} onLogout={handleLogout} />
         ) : (
-          <Signup onLogin={handleLogin} onSwitchToLogin={() => setView('login')} />
-        )
-      )}
-    </div>
+          view === 'login' ? (
+            <Login onLogin={handleLogin} onSwitchToSignup={() => setView('signup')} />
+          ) : (
+            <Signup onLogin={handleLogin} onSwitchToLogin={() => setView('login')} />
+          )
+        )}
+      </div>
+    </ThemeProvider>
   );
 }
 
