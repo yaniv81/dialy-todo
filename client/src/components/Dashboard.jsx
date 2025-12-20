@@ -161,6 +161,8 @@ export default function Dashboard({ user, onLogout }) {
         }
     };
 
+    const [sortBy, setSortBy] = useState('priority');
+
     // Filter for today
     const todayIndex = new Date().getDay(); // 0-6 Sun-Sat
     const todayStr = getLocalDateStr();
@@ -193,8 +195,20 @@ export default function Dashboard({ user, onLogout }) {
     });
 
 
-    // Sort by priority (asc means 0 is top)
-    todaysTasks.sort((a, b) => (a.priority || 0) - (b.priority || 0));
+    // Sort logic
+    todaysTasks.sort((a, b) => {
+        if (sortBy === 'category') {
+            const catA = a.category || '';
+            const catB = b.category || '';
+            if (catA !== catB) {
+                if (!catA) return 1; // Put no-category at the end
+                if (!catB) return -1;
+                return catA.localeCompare(catB);
+            }
+        }
+        // Fallback or default to priority
+        return (a.priority || 0) - (b.priority || 0);
+    });
 
     if (showManage) {
         return <ManageTasks
@@ -229,7 +243,17 @@ export default function Dashboard({ user, onLogout }) {
             <main className="flex-1 max-w-3xl w-full mx-auto p-6 pb-24 dark:text-gray-100">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Today's Focus</h2>
-
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Sort by:</span>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                        >
+                            <option value="priority">Priority</option>
+                            <option value="category">Category</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div className="space-y-3">
@@ -277,8 +301,8 @@ export default function Dashboard({ user, onLogout }) {
                                                     <span
                                                         key={day}
                                                         className={`text-[10px] px-1.5 py-0.5 rounded ${task.days && task.days.includes(dIndex)
-                                                                ? 'bg-blue-100 text-blue-700 font-bold dark:bg-blue-900 dark:text-blue-200'
-                                                                : 'text-gray-300 dark:text-gray-600'
+                                                            ? 'bg-blue-100 text-blue-700 font-bold dark:bg-blue-900 dark:text-blue-200'
+                                                            : 'text-gray-300 dark:text-gray-600'
                                                             }`}
                                                     >
                                                         {day}
