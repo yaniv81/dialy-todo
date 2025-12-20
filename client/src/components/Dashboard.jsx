@@ -217,6 +217,7 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
             tasks={tasks}
             onClose={() => { setShowManage(false); fetchTasks(); }}
             fetchTasks={fetchTasks}
+            refreshUser={refreshUser}
         />;
     }
 

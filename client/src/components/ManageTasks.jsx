@@ -4,7 +4,7 @@ import api from '../lib/axios';
 
 import TaskModal from './TaskModal';
 
-export default function ManageTasks({ user, tasks, onClose, fetchTasks }) {
+export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshUser }) {
     // Local state for optimistic reordering?
     // We can just use props.tasks if we update parent or use local copy.
     const [localTasks, setLocalTasks] = useState([...tasks]);
@@ -181,6 +181,9 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks }) {
             {editingTask && (
                 <TaskModal
                     user={user}
+                    tasks={localTasks}
+                    refreshUser={refreshUser}
+                    fetchTasks={fetchTasks}
                     initialData={editingTask}
                     onClose={() => setEditingTask(null)}
                     onSave={handleUpdateTask}
