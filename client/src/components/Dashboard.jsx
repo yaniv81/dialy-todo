@@ -258,14 +258,14 @@ export default function Dashboard({ user, onLogout }) {
                                         {isCompleted && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                     </div>
                                     <div className="flex-1">
-                                        <div className="flex items-center flex-wrap gap-2">
-                                            <span className={`text-lg font-medium ${isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'}`}>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className={`text-lg font-medium break-words flex-1 text-left ${isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'}`}>
                                                 {task.text}
                                             </span>
                                             {task.category && (
                                                 <span
-                                                    style={{ color: user.categories?.find(c => c.name === task.category)?.color || '#3B82F6' }}
-                                                    className="text-xs font-bold px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700"
+                                                    style={{ backgroundColor: user.categories?.find(c => c.name === task.category)?.color || '#3B82F6' }}
+                                                    className="text-xs px-2 py-0.5 rounded text-white shrink-0"
                                                 >
                                                     {task.category}
                                                 </span>
@@ -274,7 +274,7 @@ export default function Dashboard({ user, onLogout }) {
                                         <div className="flex gap-1 mt-1">
                                             {task.recurring && task.frequency !== 'everyOtherDay' && (
                                                 task.days.length === 7 ? (
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400">Every day</span>
+                                                    <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded font-bold dark:bg-purple-900 dark:text-purple-200">Every day</span>
                                                 ) : (
                                                     ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIndex) => (
                                                         task.days.includes(dIndex) && (
@@ -426,7 +426,9 @@ function AddTaskModal({ user, onClose, onAdd, onSubscribe }) {
                                             setIsNewCategory(true);
                                             setCategory('');
                                             // Suggest a random nice color
-                                            const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+                                            // Generate a random dark color to ensure white text is readable
+                                            // Limiting RGB values to 0-160
+                                            const randomColor = '#' + [0, 0, 0].map(() => Math.floor(Math.random() * 160).toString(16).padStart(2, '0')).join('');
                                             setCategoryColor(randomColor);
                                         } else {
                                             setIsNewCategory(false);
