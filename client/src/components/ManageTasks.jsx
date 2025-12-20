@@ -144,6 +144,39 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks }) {
                     ))}
                     {localTasks.length === 0 && <p className="text-center text-gray-500 py-8">No tasks to manage.</p>}
                 </div>
+
+                <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                        onClick={() => {
+                            if (window.confirm('Reset App Data? This will clear all local cache and reload.')) {
+                                if ('serviceWorker' in navigator) {
+                                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                                        for (let registration of registrations) {
+                                            registration.unregister();
+                                        }
+                                    });
+                                }
+                                caches.keys().then(names => {
+                                    for (let name of names) {
+                                        caches.delete(name);
+                                    }
+                                });
+                                localStorage.clear();
+                                sessionStorage.clear();
+                                window.location.reload(true);
+                            }
+                        }}
+                        className="w-full py-3 text-red-600 font-bold border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center gap-2"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Force Reset App Data
+                    </button>
+                    <p className="text-center text-xs text-gray-500 mt-2">
+                        Use this if you see display issues or missing styles.
+                    </p>
+                </div>
             </div>
             {editingTask && (
                 <TaskModal

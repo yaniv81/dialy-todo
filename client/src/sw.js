@@ -2,13 +2,14 @@ import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
 import { clientsClaim } from 'workbox-core'
 
 self.skipWaiting()
+// Force Update: 2025-12-20T16:03:00
 clientsClaim()
 
 cleanupOutdatedCaches()
 
 precacheAndRoute(self.__WB_MANIFEST)
 
-self.addEventListener('push', function(event) {
+self.addEventListener('push', function (event) {
     if (event.data) {
         const data = event.data.json();
         const options = {
@@ -23,7 +24,7 @@ self.addEventListener('push', function(event) {
     }
 });
 
-self.addEventListener('notificationclick', function(event) {
+self.addEventListener('notificationclick', function (event) {
     event.notification.close();
     event.waitUntil(
         clients.matchAll({ type: 'window' }).then(windowClients => {
