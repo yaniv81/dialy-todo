@@ -17,6 +17,9 @@ export default defineConfig({
         short_name: 'Todo',
         description: 'A simple daily todo application',
         theme_color: '#ffffff',
+        display: 'standalone',
+        start_url: '/',
+        background_color: '#ffffff',
         icons: [
           {
             src: 'pwa-192x192.png',
