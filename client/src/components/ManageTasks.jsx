@@ -99,8 +99,8 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks }) {
                                     {task.text}
                                     {task.category && (
                                         <span
-                                            style={{ color: user?.categories?.find(c => c.name === task.category)?.color || '#3B82F6' }}
-                                            className="ml-2 text-xs font-bold"
+                                            style={{ backgroundColor: user?.categories?.find(c => c.name === task.category)?.color || '#3B82F6' }}
+                                            className="ml-2 text-xs px-2 py-0.5 rounded text-white font-normal"
                                         >
                                             {task.category}
                                         </span>
