@@ -135,7 +135,7 @@ export default function Dashboard({ user, onLogout }) {
 
     // ... imports and other code ...
 
-    const handleAddTask = async (text, days, recurring, frequency, startDate, alertEnabled, alertTime, alertMode) => {
+    const handleAddTask = async (text, days, recurring, frequency, startDate, alertEnabled, alertTime, alertMode, category, categoryColor) => {
         try {
             await api.post('/api/tasks', {
                 text,
@@ -146,10 +146,16 @@ export default function Dashboard({ user, onLogout }) {
                 date: recurring ? undefined : getLocalDateStr(),
                 alertEnabled,
                 alertTime,
-                alertMode
+                alertMode,
+                category,
+                categoryColor
             });
             fetchTasks();
             setShowAddModal(false);
+            // We might want to refresh user to get new categories if any added
+            if (categoryColor) {
+                window.location.reload(); // Simple way to fetch new user data or we can pass a callback to refresh user
+            }
         } catch (err) {
             console.error('Add failed', err);
         }
@@ -192,6 +198,7 @@ export default function Dashboard({ user, onLogout }) {
 
     if (showManage) {
         return <ManageTasks
+            user={user}
             tasks={tasks}
             onClose={() => { setShowManage(false); fetchTasks(); }}
             fetchTasks={fetchTasks}
@@ -250,9 +257,42 @@ export default function Dashboard({ user, onLogout }) {
                                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition ${isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-300 dark:border-gray-500'}`}>
                                         {isCompleted && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                     </div>
-                                    <span className={`text-lg font-medium flex-1 ${isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'}`}>
-                                        {task.text}
-                                    </span>
+                                    <div className="flex-1">
+                                        <div className="flex items-center flex-wrap gap-2">
+                                            <span className={`text-lg font-medium ${isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'}`}>
+                                                {task.text}
+                                            </span>
+                                            {task.category && (
+                                                <span
+                                                    style={{ color: user.categories?.find(c => c.name === task.category)?.color || '#3B82F6' }}
+                                                    className="text-xs font-bold px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700"
+                                                >
+                                                    {task.category}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-1 mt-1">
+                                            {task.recurring && task.frequency !== 'everyOtherDay' && (
+                                                task.days.length === 7 ? (
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">Every day</span>
+                                                ) : (
+                                                    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIndex) => (
+                                                        task.days.includes(dIndex) && (
+                                                            <span key={day} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-bold dark:bg-blue-900 dark:text-blue-200">
+                                                                {day}
+                                                            </span>
+                                                        )
+                                                    ))
+                                                )
+                                            )}
+                                            {task.frequency === 'everyOtherDay' && (
+                                                <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded font-bold dark:bg-purple-900 dark:text-purple-200">Every Other Day</span>
+                                            )}
+                                            {!task.recurring && (
+                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">One-off</span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             );
                         })
@@ -261,7 +301,7 @@ export default function Dashboard({ user, onLogout }) {
             </main>
 
             {/* Add Task Modal */}
-            {showAddModal && <AddTaskModal onClose={() => setShowAddModal(false)} onAdd={handleAddTask} onSubscribe={subscribeToPush} />}
+            {showAddModal && <AddTaskModal user={user} onClose={() => setShowAddModal(false)} onAdd={handleAddTask} onSubscribe={subscribeToPush} />}
 
             {/* Bottom Floating Bar */}
             <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transform transition-transform duration-300 ease-in-out z-20 flex justify-center gap-4 dark:bg-gray-800 dark:border-gray-700 ${showBottomBar ? 'translate-y-0' : 'translate-y-full'}`}>
@@ -282,17 +322,21 @@ export default function Dashboard({ user, onLogout }) {
     );
 }
 
-function AddTaskModal({ onClose, onAdd, onSubscribe }) {
+function AddTaskModal({ user, onClose, onAdd, onSubscribe }) {
     const [text, setText] = useState('');
-    const [days, setDays] = useState([0, 1, 2, 3, 4, 5, 6]); // Default Mon-Sun
+    const [days, setDays] = useState([]); // Default NONE selected
     const [doNotRepeat, setDoNotRepeat] = useState(false);
     const [repeatEveryOtherDay, setRepeatEveryOtherDay] = useState(false);
 
-    // Alert State
+    // Category State
+    const [category, setCategory] = useState('');
+    const [isNewCategory, setIsNewCategory] = useState(false);
+    const [categoryColor, setCategoryColor] = useState('#3B82F6'); // Default Blue
+
+    // Alert State (Hidden but state kept for compatibility if needed later)
     const [alertEnabled, setAlertEnabled] = useState(false);
     const [alertTime, setAlertTime] = useState('');
     const [alertMode, setAlertMode] = useState('both');
-    const [showPermissionPrompt, setShowPermissionPrompt] = useState(false);
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -312,6 +356,11 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
         e.preventDefault();
         if (!text.trim()) return;
 
+        // Validation: Must select days unless special modes
+        if (!doNotRepeat && !repeatEveryOtherDay && days.length === 0) {
+            return;
+        }
+
         let frequency = 'weekly';
         let startDate = undefined;
         let isRecurring = !doNotRepeat;
@@ -321,7 +370,7 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
             startDate = getLocalDateStr();
         }
 
-        onAdd(text, days, isRecurring, frequency, startDate, alertEnabled, alertTime, alertMode);
+        onAdd(text, days, isRecurring, frequency, startDate, alertEnabled, alertTime, alertMode, category, isNewCategory ? categoryColor : undefined);
     };
 
     const handleEveryOtherDayToggle = () => {
@@ -333,7 +382,7 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
             // static visual pattern to indicate on/off logic: Sun, Tue, Thu, Sat
             setDays([0, 2, 4, 6]);
         } else {
-            setDays([0, 1, 2, 3, 4, 5, 6]);
+            setDays([]);
         }
     };
 
@@ -345,50 +394,15 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
             setRepeatEveryOtherDay(false);
             setDays([new Date().getDay()]);
         } else {
-            setDays([0, 1, 2, 3, 4, 5, 6]);
+            setDays([]);
         }
     };
 
-    const handleAlertToggle = () => {
-        if (!alertEnabled) {
-            // User wants to enable
-            if (!('Notification' in window)) {
-                alert('This browser does not support desktop notifications');
-                return;
-            }
-
-            if (Notification.permission === 'granted') {
-                setAlertEnabled(true);
-                if (onSubscribe) onSubscribe();
-            } else if (Notification.permission === 'denied') {
-                alert('Notifications are blocked. Please enable them in your browser settings.');
-            } else {
-                // Default - show contextual prompt
-                setShowPermissionPrompt(true);
-            }
-        } else {
-            // User wants to disable
-            setAlertEnabled(false);
-            setShowPermissionPrompt(false);
-            setAlertTime('');
-        }
-    };
-
-    const requestPermission = async () => {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            setShowPermissionPrompt(false);
-            setAlertEnabled(true);
-            if (onSubscribe) onSubscribe();
-        } else {
-            setShowPermissionPrompt(false);
-            alert('Permission denied. Cannot set alerts.');
-        }
-    };
+    const isValid = text.trim() && (doNotRepeat || repeatEveryOtherDay || days.length > 0);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 dark:bg-gray-800 dark:text-white">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 dark:bg-gray-800 dark:text-white max-h-[90vh] overflow-y-auto">
                 <h3 className="text-xl font-bold mb-4">Add New Task</h3>
                 <form onSubmit={handleSubmit}>
                     <input
@@ -401,6 +415,74 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                     />
 
                     <div className="space-y-3 mb-6">
+                        {/* Category Selection */}
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Category</label>
+                            <div className="flex gap-2 mb-2">
+                                <select
+                                    value={isNewCategory ? '__NEW__' : category}
+                                    onChange={(e) => {
+                                        if (e.target.value === '__NEW__') {
+                                            setIsNewCategory(true);
+                                            setCategory('');
+                                            // Suggest a random nice color
+                                            const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+                                            setCategoryColor(randomColor);
+                                        } else {
+                                            setIsNewCategory(false);
+                                            setCategory(e.target.value);
+                                        }
+                                    }}
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                >
+                                    <option value="">None</option>
+                                    {user.categories && user.categories.map(c => (
+                                        <option key={c.name} value={c.name}>{c.name}</option>
+                                    ))}
+                                    <option value="__NEW__">+ New Category</option>
+                                </select>
+                            </div>
+                            {isNewCategory && (
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Category Name"
+                                        value={category}
+                                        onChange={(e) => setCategory(e.target.value)}
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                    <input
+                                        type="color"
+                                        value={categoryColor}
+                                        onChange={(e) => setCategoryColor(e.target.value)}
+                                        className="h-10 w-10 p-1 rounded cursor-pointer bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+
+                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100 dark:bg-gray-700 dark:border-gray-600">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Repeat every day</span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (days.length === 7) {
+                                        setDays([]);
+                                    } else {
+                                        setDays([0, 1, 2, 3, 4, 5, 6]);
+                                        setDoNotRepeat(false);
+                                        setRepeatEveryOtherDay(false);
+                                    }
+                                }}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${days.length === 7 ? 'bg-green-500' : 'bg-gray-200'}`}
+                            >
+                                <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${days.length === 7 ? 'translate-x-6' : 'translate-x-1'}`}
+                                />
+                            </button>
+                        </div>
+
                         <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100 dark:bg-gray-700 dark:border-gray-600">
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Repeat every other day</span>
                             <button
@@ -427,97 +509,11 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                             </button>
                         </div>
 
-                        {/* Alert Toggle */}
-                        <div className="flex flex-col bg-gray-50 p-3 rounded-lg border border-gray-100 dark:bg-gray-700 dark:border-gray-600">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Set Alert Time</span>
-                                <button
-                                    type="button"
-                                    onClick={handleAlertToggle}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${alertEnabled ? 'bg-green-500' : 'bg-gray-200'}`}
-                                >
-                                    <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${alertEnabled ? 'translate-x-6' : 'translate-x-1'}`}
-                                    />
-                                </button>
-                            </div>
-
-                            {/* Contextual Permission Prompt */}
-                            {showPermissionPrompt && (
-                                <div className="mt-3 p-3 bg-blue-50 text-blue-800 text-sm rounded border border-blue-100">
-                                    <p className="mb-2">To send you an alert at your chosen time, we need system permission.</p>
-                                    <button
-                                        type="button"
-                                        onClick={requestPermission}
-                                        className="bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-blue-700"
-                                    >
-                                        Enable Notifications
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Alert Settings with Slide Down Animation */}
-                            <div className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${alertEnabled ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                <div className="overflow-hidden">
-                                    <div className={`space-y-3 pl-1 border-gray-200 transition-all duration-300 ${alertEnabled ? 'pt-3 mt-3 border-t opacity-100' : 'pt-0 mt-0 border-none opacity-0'}`}>
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 dark:text-gray-400">Time</label>
-                                            <input
-                                                type="time"
-                                                value={alertTime}
-                                                onChange={(e) => setAlertTime(e.target.value)}
-                                                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                                                required={alertEnabled}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 dark:text-gray-400">Mode</label>
-                                            <div className="flex space-x-4">
-                                                <label className="flex items-center">
-                                                    <input
-                                                        type="radio"
-                                                        name="alertMode"
-                                                        value="vibration"
-                                                        checked={alertMode === 'vibration'}
-                                                        onChange={(e) => setAlertMode(e.target.value)}
-                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:bg-gray-600 dark:border-gray-500"
-                                                    />
-                                                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Vibrate</span>
-                                                </label>
-                                                <label className="flex items-center">
-                                                    <input
-                                                        type="radio"
-                                                        name="alertMode"
-                                                        value="sound"
-                                                        checked={alertMode === 'sound'}
-                                                        onChange={(e) => setAlertMode(e.target.value)}
-                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:bg-gray-600 dark:border-gray-500"
-                                                    />
-                                                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Sound</span>
-                                                </label>
-                                                <label className="flex items-center">
-                                                    <input
-                                                        type="radio"
-                                                        name="alertMode"
-                                                        value="both"
-                                                        checked={alertMode === 'both'}
-                                                        onChange={(e) => setAlertMode(e.target.value)}
-                                                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:bg-gray-600 dark:border-gray-500"
-                                                    />
-                                                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">Both</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
+                        {/* Alert Hidden per user request */}
                     </div>
 
                     <div className="mb-6">
-                        <label className={`block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200`}>Repeat On</label>
+                        <label className={`block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200`}>Repeat On <span className="text-red-500">*</span></label>
                         <div className="flex justify-between">
                             {dayNames.map((name, index) => (
                                 <button
@@ -534,11 +530,14 @@ function AddTaskModal({ onClose, onAdd, onSubscribe }) {
                                 </button>
                             ))}
                         </div>
+                        {(!doNotRepeat && !repeatEveryOtherDay && days.length === 0) && (
+                            <p className="text-xs text-red-500 mt-2">Please select at least one day.</p>
+                        )}
                     </div>
 
                     <div className="flex justify-end gap-2">
                         <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded dark:text-gray-300 dark:hover:bg-gray-700">Cancel</button>
-                        <button type="submit" disabled={!text.trim()} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-md cursor-pointer dark:bg-blue-500 dark:hover:bg-blue-600">Add Task</button>
+                        <button type="submit" disabled={!isValid} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-md cursor-pointer dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed">Add Task</button>
                     </div>
                 </form>
             </div>

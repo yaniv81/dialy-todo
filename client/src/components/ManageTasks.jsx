@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import api from '../lib/axios';
 
-export default function ManageTasks({ tasks, onClose, fetchTasks }) {
+export default function ManageTasks({ user, tasks, onClose, fetchTasks }) {
     // Local state for optimistic reordering?
     // We can just use props.tasks if we update parent or use local copy.
     const [localTasks, setLocalTasks] = useState([...tasks]);
@@ -39,13 +39,13 @@ export default function ManageTasks({ tasks, onClose, fetchTasks }) {
     };
 
     return (
-        <div className="fixed inset-0 bg-white z-20 overflow-y-auto">
+        <div className="fixed inset-0 bg-white z-20 overflow-y-auto dark:bg-gray-900">
             <div className="max-w-3xl mx-auto p-6">
                 <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-2xl font-bold text-gray-800">Manage Tasks</h2>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Manage Tasks</h2>
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded font-medium"
+                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded font-medium dark:text-gray-300 dark:hover:bg-gray-700"
                     >
                         Done
                     </button>
@@ -53,7 +53,7 @@ export default function ManageTasks({ tasks, onClose, fetchTasks }) {
 
                 <div className="space-y-2">
                     {localTasks.map((task, index) => (
-                        <div key={task.id} className="flex items-center p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <div key={task.id} className="flex items-center p-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">
                             <div className="flex flex-col mr-4 gap-1">
                                 <button
                                     onClick={() => moveTask(index, 'up')}
@@ -74,7 +74,17 @@ export default function ManageTasks({ tasks, onClose, fetchTasks }) {
                             </div>
 
                             <div className="flex-1">
-                                <p className="font-medium text-gray-800">{task.text}</p>
+                                <p className="font-medium text-gray-800 dark:text-gray-100">
+                                    {task.text}
+                                    {task.category && (
+                                        <span
+                                            style={{ color: user?.categories?.find(c => c.name === task.category)?.color || '#3B82F6' }}
+                                            className="ml-2 text-xs font-bold"
+                                        >
+                                            {task.category}
+                                        </span>
+                                    )}
+                                </p>
                                 <div className="flex gap-1 mt-1">
                                     {task.recurring === false ? (
                                         <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">

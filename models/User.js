@@ -3,7 +3,8 @@ import mongoose from 'mongoose';
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  timezone: { type: String, default: 'UTC' }
+  timezone: { type: String, default: 'UTC' },
+  categories: { type: [{ name: String, color: String }], default: [] }
 });
 
 // Map _id to id for frontend compatibility

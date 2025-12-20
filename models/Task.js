@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const taskSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   text: { type: String, required: true },
+  category: { type: String }, // Category Name
   completedDates: { type: [String], default: [] },
   days: { type: [Number], default: [0, 1, 2, 3, 4, 5, 6] },
   recurring: { type: Boolean, default: true },
