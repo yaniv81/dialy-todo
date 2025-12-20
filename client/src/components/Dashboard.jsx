@@ -272,21 +272,18 @@ export default function Dashboard({ user, onLogout }) {
                                             )}
                                         </div>
                                         <div className="flex gap-1 mt-1">
-                                            {task.recurring && task.frequency !== 'everyOtherDay' && (
-                                                task.days.length === 7 ? (
-                                                    <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded font-bold dark:bg-purple-900 dark:text-purple-200">Every day</span>
-                                                ) : (
-                                                    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIndex) => (
-                                                        task.days.includes(dIndex) && (
-                                                            <span key={day} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-bold dark:bg-blue-900 dark:text-blue-200">
-                                                                {day}
-                                                            </span>
-                                                        )
-                                                    ))
-                                                )
-                                            )}
-                                            {task.frequency === 'everyOtherDay' && (
-                                                <span className="text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded font-bold dark:bg-purple-900 dark:text-purple-200">Every Other Day</span>
+                                            {task.recurring && (
+                                                ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIndex) => (
+                                                    <span
+                                                        key={day}
+                                                        className={`text-[10px] px-1.5 py-0.5 rounded ${task.days && task.days.includes(dIndex)
+                                                                ? 'bg-blue-100 text-blue-700 font-bold dark:bg-blue-900 dark:text-blue-200'
+                                                                : 'text-gray-300 dark:text-gray-600'
+                                                            }`}
+                                                    >
+                                                        {day}
+                                                    </span>
+                                                ))
                                             )}
                                             {!task.recurring && (
                                                 <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">One-off</span>
