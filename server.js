@@ -211,11 +211,19 @@ app.patch('/api/tasks/:id', auth, async (req, res) => {
     if (req.body.priority !== undefined) task.priority = req.body.priority;
     if (req.body.text !== undefined) task.text = req.body.text;
     if (req.body.days !== undefined) task.days = req.body.days;
+    if (req.body.recurring !== undefined) task.recurring = req.body.recurring;
     if (req.body.frequency !== undefined) task.frequency = req.body.frequency;
     if (req.body.startDate !== undefined) task.startDate = req.body.startDate;
     if (req.body.alertEnabled !== undefined) task.alertEnabled = req.body.alertEnabled;
     if (req.body.alertTime !== undefined) task.alertTime = req.body.alertTime;
     if (req.body.alertMode !== undefined) task.alertMode = req.body.alertMode;
+    if (req.body.category !== undefined) {
+      task.category = req.body.category;
+      // Check if we need to update category color in User? 
+      // The PATCH mostly updates task data. Creating new category is done via User update in frontend or POST.
+      // But if user changes color of existing category, that's a User update.
+      // For now let's assume this just changes the task's category link.
+    }
 
     await task.save();
     res.json(task);

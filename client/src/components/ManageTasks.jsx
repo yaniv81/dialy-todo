@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../lib/axios';
+
+
+import TaskModal from './TaskModal';
 
 export default function ManageTasks({ user, tasks, onClose, fetchTasks }) {
     // Local state for optimistic reordering?
     // We can just use props.tasks if we update parent or use local copy.
     const [localTasks, setLocalTasks] = useState([...tasks]);
+    const [editingTask, setEditingTask] = useState(null);
+
+    // Sync when props change
+    useEffect(() => {
+        setLocalTasks(tasks);
+    }, [tasks]);
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this task?')) return;
@@ -15,6 +24,18 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks }) {
             fetchTasks();
         } catch (err) {
             console.error('Delete failed', err);
+        }
+    };
+
+    const handleUpdateTask = async (data) => {
+        try {
+            await api.patch(`/api/tasks/${editingTask.id}`, data);
+            setEditingTask(null);
+            fetchTasks(); // Helper to refresh parent (Dashboard)
+            // Also update localTasks to reflect change immediately if we want smooth UX,
+            // but fetchTasks will trigger prop update which syncs localTasks via useEffect.
+        } catch (err) {
+            console.error('Update failed', err);
         }
     };
 
@@ -103,18 +124,35 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks }) {
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => handleDelete(task.id)}
-                                className="ml-4 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
-                                title="Delete Task"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            </button>
+                            <div className="flex flex-col gap-1 items-center ml-4">
+                                <button
+                                    onClick={() => setEditingTask(task)}
+                                    className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                    title="Edit Task"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(task.id)}
+                                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                    title="Delete Task"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
                         </div>
                     ))}
                     {localTasks.length === 0 && <p className="text-center text-gray-500 py-8">No tasks to manage.</p>}
                 </div>
             </div>
+            {editingTask && (
+                <TaskModal
+                    user={user}
+                    initialData={editingTask}
+                    onClose={() => setEditingTask(null)}
+                    onSave={handleUpdateTask}
+                />
+            )}
         </div>
     );
 }
