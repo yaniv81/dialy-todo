@@ -325,6 +325,7 @@ export default function Dashboard({ user, onLogout }) {
             {/* Add Task Modal */}
             {showAddModal && <TaskModal
                 user={user}
+                tasks={tasks}
                 onClose={() => setShowAddModal(false)}
                 onSave={(data) => handleAddTask(
                     data.text,

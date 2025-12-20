@@ -276,22 +276,43 @@ app.patch('/api/categories/:name', auth, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const categoryIndex = user.categories.findIndex(c => c.name === name);
-    if (categoryIndex === -1) {
-      return res.status(404).json({ error: 'Category not found' });
+
+    if (categoryIndex !== -1) {
+      // Normal update
+      if (newName) user.categories[categoryIndex].name = newName;
+      if (newColor) user.categories[categoryIndex].color = newColor;
+    } else {
+      // Orphan adoption: Category used in tasks but not in User list
+      // We are "creating" it now (or renaming it to a new valid one)
+      // Check if task exists with this category to confirm it's a valid orphan?
+      // Optional, but let's just assume prompt is correct or user wants to create it.
+      // But wait, if it's a rename of an orphan, we add 'newName' (or 'name' if no newName) to user.categories
+      const nameToUse = newName || name;
+      // Check if target name already exists?
+      if (user.categories.some(c => c.name === nameToUse)) {
+        // Merge? Or just error? Let's just update the tasks to point to the existing one.
+        // If we merge, we don't add a new category.
+      } else {
+        user.categories.push({
+          name: nameToUse,
+          color: newColor || '#3B82F6'
+        });
+      }
     }
 
-    // Update Category in User
-    if (newName) user.categories[categoryIndex].name = newName;
-    if (newColor) user.categories[categoryIndex].color = newColor;
     await user.save();
 
-    // Update Tasks if name changed
+    // Update Tasks
+    // If renaming:
     if (newName && newName !== name) {
       await Task.updateMany(
         { userId: req.user._id, category: name },
         { category: newName }
       );
     }
+    // If just changing color of orphan (and not renaming), or adopting:
+    // We pushed to user.categories so future renders will use that color.
+    // Tasks stick with 'category: name'.
 
     res.json({ message: 'Category updated', categories: user.categories });
   } catch (err) {

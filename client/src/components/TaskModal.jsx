@@ -9,7 +9,7 @@ const getLocalDateStr = () => {
     return `${year}-${month}-${day}`;
 };
 
-export default function TaskModal({ user, onClose, onSave, initialData = null }) {
+export default function TaskModal({ user, tasks = [], onClose, onSave, initialData = null }) {
     const [text, setText] = useState(initialData?.text || '');
     const [days, setDays] = useState(initialData?.days || []);
     const [doNotRepeat, setDoNotRepeat] = useState(false);
@@ -277,6 +277,7 @@ export default function TaskModal({ user, onClose, onSave, initialData = null })
             {showManageCategories && (
                 <ManageCategoriesModal
                     user={user}
+                    tasks={tasks}
                     onClose={() => setShowManageCategories(false)}
                     onUpdate={() => window.location.reload()}
                 />
