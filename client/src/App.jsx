@@ -61,7 +61,7 @@ function App() {
     <ThemeProvider>
       <div className="min-h-screen bg-gray-50 text-gray-900 font-sans dark:bg-gray-900 dark:text-gray-100 transition-colors duration-200">
         {user ? (
-          <Dashboard user={user} onLogout={handleLogout} />
+          <Dashboard user={user} onLogout={handleLogout} refreshUser={checkSession} />
         ) : (
           view === 'login' ? (
             <Login onLogin={handleLogin} onSwitchToSignup={() => setView('signup')} />

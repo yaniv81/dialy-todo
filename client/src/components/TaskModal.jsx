@@ -9,7 +9,7 @@ const getLocalDateStr = () => {
     return `${year}-${month}-${day}`;
 };
 
-export default function TaskModal({ user, tasks = [], onClose, onSave, initialData = null }) {
+export default function TaskModal({ user, tasks = [], onClose, onSave, initialData = null, refreshUser, fetchTasks }) {
     const [text, setText] = useState(initialData?.text || '');
     const [days, setDays] = useState(initialData?.days || []);
     const [doNotRepeat, setDoNotRepeat] = useState(false);
@@ -279,7 +279,10 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
                     user={user}
                     tasks={tasks}
                     onClose={() => setShowManageCategories(false)}
-                    onUpdate={() => window.location.reload()}
+                    onUpdate={() => {
+                        if (refreshUser) refreshUser();
+                        if (fetchTasks) fetchTasks();
+                    }}
                 />
             )}
         </div>

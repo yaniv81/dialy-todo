@@ -29,7 +29,7 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-export default function Dashboard({ user, onLogout }) {
+export default function Dashboard({ user, onLogout, refreshUser }) {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -155,7 +155,7 @@ export default function Dashboard({ user, onLogout }) {
             setShowAddModal(false);
             // We might want to refresh user to get new categories if any added
             if (categoryColor) {
-                window.location.reload(); // Simple way to fetch new user data or we can pass a callback to refresh user
+                refreshUser(); // Refresh user to get new categories
             }
         } catch (err) {
             console.error('Add failed', err);
@@ -327,6 +327,8 @@ export default function Dashboard({ user, onLogout }) {
                 user={user}
                 tasks={tasks}
                 onClose={() => setShowAddModal(false)}
+                refreshUser={refreshUser}
+                fetchTasks={fetchTasks}
                 onSave={(data) => handleAddTask(
                     data.text,
                     data.days,

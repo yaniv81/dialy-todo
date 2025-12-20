@@ -7,18 +7,24 @@ export default function ManageCategoriesModal({ user, tasks = [], onClose, onUpd
     const [editValue, setEditValue] = useState('');
     const [orphans, setOrphans] = useState([]);
 
+    // Sync categories from user prop (only when user changes)
     useEffect(() => {
-        if (tasks && tasks.length > 0) {
-            const definedNames = new Set(user.categories.map(c => c.name));
+        setCategories(user.categories || []);
+    }, [user]);
+
+    // Calculate orphans (when tasks or user changes)
+    useEffect(() => {
+        if (tasks) {
+            const definedNames = new Set((user.categories || []).map(c => c.name));
             const usedNames = new Set(tasks.map(t => t.category).filter(Boolean));
             const foundOrphans = [...usedNames].filter(name => !definedNames.has(name));
             setOrphans(foundOrphans);
         }
-    }, [tasks, user.categories]);
+    }, [tasks, user]);
 
     const handleUpdate = async (originalName, newName, newColor) => {
         try {
-            await api.patch(`/api/categories/${originalName}`, {
+            await api.patch(`/api/categories/${encodeURIComponent(originalName)}`, {
                 newName,
                 newColor
             });
@@ -33,7 +39,10 @@ export default function ManageCategoriesModal({ user, tasks = [], onClose, onUpd
         if (!confirm(`Are you sure you want to delete the category "${name}"? Tasks will lose this category.`)) return;
 
         try {
-            await api.delete(`/api/categories/${name}`);
+            await api.delete(`/api/categories/${encodeURIComponent(name)}`);
+            // Optimistic update
+            setCategories(prev => prev.filter(c => c.name !== name));
+            setOrphans(prev => prev.filter(o => o !== name));
             onUpdate();
         } catch (err) {
             console.error('Failed to delete category', err);
