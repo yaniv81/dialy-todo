@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ManageCategoriesModal from './ManageCategoriesModal';
 
 const getLocalDateStr = () => {
     const d = new Date();
@@ -27,6 +28,7 @@ export default function TaskModal({ user, onClose, onSave, initialData = null })
     }, [initialData]);
 
     // Category State
+    const [showManageCategories, setShowManageCategories] = useState(false);
     const [category, setCategory] = useState(initialData?.category || '');
     const [isNewCategory, setIsNewCategory] = useState(false);
     const [categoryColor, setCategoryColor] = useState('#3B82F6'); // Default Blue
@@ -49,8 +51,10 @@ export default function TaskModal({ user, onClose, onSave, initialData = null })
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     const toggleDay = (index) => {
+        // If Do Not Repeat is on, prevent changing days
+        if (doNotRepeat) return;
+
         // Turning off special modes if user manually selects days
-        if (doNotRepeat) setDoNotRepeat(false);
         if (repeatEveryOtherDay) setRepeatEveryOtherDay(false);
 
         if (days.includes(index)) {
@@ -161,6 +165,13 @@ export default function TaskModal({ user, onClose, onSave, initialData = null })
                                     ))}
                                     <option value="__NEW__">+ New Category</option>
                                 </select>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowManageCategories(true)}
+                                    className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                                >
+                                    Manage
+                                </button>
                             </div>
                             {isNewCategory && (
                                 <div className="flex gap-2">
@@ -237,7 +248,10 @@ export default function TaskModal({ user, onClose, onSave, initialData = null })
                                     key={name}
                                     type="button"
                                     onClick={() => toggleDay(index)}
-                                    className={`w-10 h-10 rounded-full text-xs font-bold transition ${repeatEveryOtherDay ? 'opacity-55' : ''} 
+                                    disabled={doNotRepeat}
+                                    className={`w-10 h-10 rounded-full text-xs font-bold transition 
+                                        ${repeatEveryOtherDay ? 'opacity-55' : ''} 
+                                        ${doNotRepeat ? (days.includes(index) ? 'opacity-100 cursor-not-allowed' : 'opacity-20 cursor-not-allowed') : ''}
                                         ${days.includes(index)
                                             ? (repeatEveryOtherDay ? 'bg-blue-500 text-white' : 'bg-green-500 text-white')
                                             : (repeatEveryOtherDay ? 'bg-gray-400 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200')}
@@ -260,6 +274,13 @@ export default function TaskModal({ user, onClose, onSave, initialData = null })
                     </div>
                 </form>
             </div>
+            {showManageCategories && (
+                <ManageCategoriesModal
+                    user={user}
+                    onClose={() => setShowManageCategories(false)}
+                    onUpdate={() => window.location.reload()}
+                />
+            )}
         </div>
     );
 }

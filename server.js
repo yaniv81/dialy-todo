@@ -264,6 +264,67 @@ app.patch('/api/tasks/reorder/batch', auth, async (req, res) => {
   }
 });
 
+// Category Management
+
+// Edit Category
+app.patch('/api/categories/:name', auth, async (req, res) => {
+  const { name } = req.params;
+  const { newName, newColor } = req.body;
+
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const categoryIndex = user.categories.findIndex(c => c.name === name);
+    if (categoryIndex === -1) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    // Update Category in User
+    if (newName) user.categories[categoryIndex].name = newName;
+    if (newColor) user.categories[categoryIndex].color = newColor;
+    await user.save();
+
+    // Update Tasks if name changed
+    if (newName && newName !== name) {
+      await Task.updateMany(
+        { userId: req.user._id, category: name },
+        { category: newName }
+      );
+    }
+
+    res.json({ message: 'Category updated', categories: user.categories });
+  } catch (err) {
+    console.error('Category update error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete Category
+app.delete('/api/categories/:name', auth, async (req, res) => {
+  const { name } = req.params;
+
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Remove from User
+    user.categories = user.categories.filter(c => c.name !== name);
+    await user.save();
+
+    // Update Tasks: Remove category
+    await Task.updateMany(
+      { userId: req.user._id, category: name },
+      { $unset: { category: "", categoryColor: "" } } // Unset both just in case
+    );
+
+    res.json({ message: 'Category deleted', categories: user.categories });
+  } catch (err) {
+    console.error('Category delete error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 // Notifications
 
