@@ -89,18 +89,18 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
                                 <button
                                     onClick={() => moveTask(index, 'up')}
                                     disabled={index === 0}
-                                    className="text-gray-400 hover:text-blue-600 disabled:opacity-30 disabled:hover:text-gray-400"
+                                    className="p-3 text-gray-500 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg disabled:opacity-30 disabled:hover:bg-gray-50 disabled:hover:text-gray-500 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-blue-400 transition-colors"
                                     title="Move Up"
                                 >
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
                                 </button>
                                 <button
                                     onClick={() => moveTask(index, 'down')}
                                     disabled={index === localTasks.length - 1}
-                                    className="text-gray-400 hover:text-blue-600 disabled:opacity-30 disabled:hover:text-gray-400"
+                                    className="p-3 text-gray-500 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg disabled:opacity-30 disabled:hover:bg-gray-50 disabled:hover:text-gray-500 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-blue-400 transition-colors"
                                     title="Move Down"
                                 >
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                 </button>
                             </div>
 
