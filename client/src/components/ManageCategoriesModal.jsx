@@ -52,18 +52,51 @@ export default function ManageCategoriesModal({ user, tasks = [], onClose, onUpd
 
     const renderCategoryRow = (name, color, isOrphan = false) => (
         <div key={name} className={`flex items-center gap-3 p-2 rounded ${isOrphan ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-gray-50 dark:bg-gray-700'}`}>
-            <input
-                type="color"
-                defaultValue={color || '#3B82F6'}
-                onBlur={(e) => {
-                    const val = e.target.value;
-                    // If it's an orphan and we change color, it adopts it.
-                    if (val !== color || isOrphan) {
-                        handleUpdate(name, null, val);
-                    }
-                }}
-                className="h-8 w-8 p-0 rounded border-0 cursor-pointer"
-            />
+            <div className="relative group">
+                <button
+                    className="w-8 h-8 rounded-full border border-gray-200 shadow-sm"
+                    style={{ backgroundColor: color }}
+                    onClick={() => {
+                        // Toggle a simple dropdown or just cycling?
+                        // A dropdown is better for 10+ colors.
+                        // For simplicity, let's just show the palette below or uses a standard behavior
+                        // But since we need a custom UI, let's make it a popover or a simple row if space permits.
+                        // Let's go with a simple click-to-cycle or a small grid. 
+                        // Given the instructions, let's make a small popover grid or just a row of circles if not too many.
+                        // Let's stick to a predefined "Picker" component logic inline for now or a simple dropdown.
+                    }}
+                >
+                </button>
+                {/* Simple hover/focus based picker for now, or we can make it explicit state if needed. 
+                    Let's use a hidden peer or just a simple state in the parent? 
+                    Actually, let's keep it simple: Just show the swatch. When clicked, show a small absolute div with options.
+                */}
+                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-xl rounded-lg p-2 grid grid-cols-4 gap-1 z-50 hidden group-hover:block transition-opacity">
+                    {[
+                        '#1f2937', '#111827', // Gray 800, 900
+                        '#b91c1c', '#991b1b', // Red 700, 800
+                        '#c2410c', '#9a3412', // Orange 700, 800
+                        '#b45309', '#92400e', // Amber 700, 800
+                        '#15803d', '#166534', // Green 700, 800
+                        '#0e7490', '#155e75', // Cyan 700, 800
+                        '#1d4ed8', '#1e40af', // Blue 700, 800
+                        '#4338ca', '#3730a3', // Indigo 700, 800
+                        '#7e22ce', '#6b21a8', // Purple 700, 800
+                        '#be185d', '#9d174d'  // Pink 700, 800
+                    ].map(c => (
+                        <button
+                            key={c}
+                            className={`w-6 h-6 rounded-full hover:scale-110 transition ${c === color ? 'ring-2 ring-offset-1 ring-blue-500' : ''}`}
+                            style={{ backgroundColor: c }}
+                            onClick={() => {
+                                if (c !== color || isOrphan) {
+                                    handleUpdate(name, null, c);
+                                }
+                            }}
+                        />
+                    ))}
+                </div>
+            </div>
 
             <div className="flex-1">
                 {editingName === name ? (

@@ -3,12 +3,14 @@ import api from '../lib/axios';
 
 
 import TaskModal from './TaskModal';
+import ManageCategoriesModal from './ManageCategoriesModal';
 
 export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshUser }) {
     // Local state for optimistic reordering?
     // We can just use props.tasks if we update parent or use local copy.
     const [localTasks, setLocalTasks] = useState([...tasks]);
     const [editingTask, setEditingTask] = useState(null);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
 
     // Sync when props change
     useEffect(() => {
@@ -64,12 +66,20 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
             <div className="max-w-3xl mx-auto p-6">
                 <div className="flex justify-between items-center mb-8">
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Manage Tasks</h2>
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded font-medium dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
-                        Done
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowCategoryModal(true)}
+                            className="px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded font-medium dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                        >
+                            Edit Categories
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded font-medium dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                            Done
+                        </button>
+                    </div>
                 </div>
 
                 <div className="space-y-2">
@@ -95,17 +105,19 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
                             </div>
 
                             <div className="flex-1">
-                                <p className="font-medium text-gray-800 dark:text-gray-100">
-                                    {task.text}
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="font-medium text-gray-800 dark:text-gray-100 break-words flex-1 text-left">
+                                        {task.text}
+                                    </span>
                                     {task.category && (
                                         <span
                                             style={{ backgroundColor: user?.categories?.find(c => c.name === task.category)?.color || '#3B82F6' }}
-                                            className="ml-2 text-xs px-2 py-0.5 rounded text-white font-normal"
+                                            className="text-xs px-2 py-0.5 rounded text-white shrink-0"
                                         >
                                             {task.category}
                                         </span>
                                     )}
-                                </p>
+                                </div>
                                 <div className="flex gap-1 mt-1">
                                     {task.recurring === false ? (
                                         <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">
@@ -187,6 +199,17 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
                     initialData={editingTask}
                     onClose={() => setEditingTask(null)}
                     onSave={handleUpdateTask}
+                />
+            )}
+            {showCategoryModal && (
+                <ManageCategoriesModal
+                    user={user}
+                    tasks={tasks}
+                    onClose={() => setShowCategoryModal(false)}
+                    onUpdate={() => {
+                        if (refreshUser) refreshUser();
+                        if (fetchTasks) fetchTasks();
+                    }}
                 />
             )}
         </div>
