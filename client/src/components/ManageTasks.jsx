@@ -64,22 +64,23 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
     return (
         <div className="fixed inset-0 bg-white z-20 overflow-y-auto dark:bg-gray-900">
             <div className="max-w-3xl mx-auto p-6">
-                <div className="flex justify-between items-center mb-8">
+                <div className="flex justify-between items-center mb-2">
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Manage Tasks</h2>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setShowCategoryModal(true)}
-                            className="px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded font-medium dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
-                        >
-                            Edit Categories
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded font-medium dark:text-gray-300 dark:hover:bg-gray-700"
-                        >
-                            Done
-                        </button>
-                    </div>
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded font-medium dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                        Done
+                    </button>
+                </div>
+
+                <div className="flex justify-end mb-6">
+                    <button
+                        onClick={() => setShowCategoryModal(true)}
+                        className="px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded font-medium dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                    >
+                        Edit Categories
+                    </button>
                 </div>
 
                 <div className="space-y-2">
