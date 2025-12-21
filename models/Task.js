@@ -8,6 +8,7 @@ const taskSchema = new mongoose.Schema({
   days: { type: [Number], default: [0, 1, 2, 3, 4, 5, 6] },
   recurring: { type: Boolean, default: true },
   frequency: { type: String, enum: ['daily', 'weekly', 'everyOtherDay'], default: 'weekly' },
+  removeAfterCompletion: { type: Boolean, default: false },
   startDate: { type: String }, // Format YYYY-MM-DD
   date: { type: String }, // Format YYYY-MM-DD for non-recurring
   priority: { type: Number, default: 0 },
