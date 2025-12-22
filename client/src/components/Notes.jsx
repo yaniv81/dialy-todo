@@ -32,7 +32,7 @@ export default function Notes({ onClose }) {
             }
             setShowModal(false);
             setEditingNote(null);
-            fetchNotes();
+            fetchNotes(); // Fetch to get correct order/id
         } catch (err) {
             console.error('Save note failed', err);
         }
@@ -45,6 +45,25 @@ export default function Notes({ onClose }) {
             fetchNotes();
         } catch (err) {
             console.error('Delete note failed', err);
+        }
+    };
+
+    const moveNote = async (index, direction) => {
+        const newNotes = [...notes];
+        if (direction === 'up' && index > 0) {
+            [newNotes[index], newNotes[index - 1]] = [newNotes[index - 1], newNotes[index]];
+        } else if (direction === 'down' && index < newNotes.length - 1) {
+            [newNotes[index], newNotes[index + 1]] = [newNotes[index + 1], newNotes[index]];
+        } else {
+            return;
+        }
+        setNotes(newNotes);
+
+        try {
+            await api.patch('/api/notes/reorder/batch', { noteIds: newNotes.map(n => n._id) });
+        } catch (err) {
+            console.error('Reorder note failed', err);
+            fetchNotes(); // Revert on failure
         }
     };
 
@@ -90,36 +109,52 @@ export default function Notes({ onClose }) {
                         No notes yet. Start writing!
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {notes.map(note => (
-                            <div key={note._id} className="bg-yellow-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-yellow-200 dark:border-gray-700 flex flex-col h-48 transition hover:shadow-md relative group">
-                                {note.title && (
-                                    <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100 mb-2 truncate">
-                                        {note.title}
-                                    </h3>
-                                )}
-                                <p className={`text-gray-600 dark:text-gray-300 text-sm whitespace-pre-wrap overflow-hidden flex-1 ${!note.title ? 'font-medium text-base pt-2' : ''}`}>
-                                    {note.content}
-                                </p>
-                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex bg-white dark:bg-gray-700 rounded-md shadow-sm border border-gray-200 dark:border-gray-600">
+                    <div className="grid grid-cols-1 gap-4">
+                        {notes.map((note, index) => (
+                            <div key={note._id} className="bg-yellow-50 dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-yellow-200 dark:border-gray-700 flex items-start gap-3 transition hover:shadow-md group">
+                                <div className="flex flex-col gap-1 mt-1">
                                     <button
-                                        onClick={() => openEdit(note)}
-                                        className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-600 rounded-l-md"
-                                        title="Edit"
+                                        onClick={() => moveNote(index, 'up')}
+                                        disabled={index === 0}
+                                        className="p-2 text-gray-400 hover:text-blue-500 hover:bg-yellow-100/50 dark:hover:bg-gray-700 rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 transition-colors"
+                                        title="Move Up"
                                     >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
                                     </button>
-                                    <div className="w-px bg-gray-200 dark:bg-gray-600"></div>
                                     <button
-                                        onClick={() => handleDelete(note._id)}
-                                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-gray-600 rounded-r-md"
-                                        title="Delete"
+                                        onClick={() => moveNote(index, 'down')}
+                                        disabled={index === notes.length - 1}
+                                        className="p-2 text-gray-400 hover:text-blue-500 hover:bg-yellow-100/50 dark:hover:bg-gray-700 rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 transition-colors"
+                                        title="Move Down"
                                     >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </button>
                                 </div>
-                                <div className="mt-2 text-xs text-gray-400 text-right">
-                                    {new Date(note.updatedAt).toLocaleDateString()}
+                                <div className="flex-1 min-w-0 py-2">
+                                    <p className="text-gray-700 dark:text-gray-200 text-base whitespace-pre-wrap break-words leading-relaxed">
+                                        {note.content}
+                                    </p>
+                                    <div className="mt-2 text-xs text-gray-400">
+                                        {new Date(note.updatedAt).toLocaleDateString()}
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-2 ml-2">
+                                    <button
+                                        onClick={() => openEdit(note)}
+                                        className="p-3 text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg bg-white dark:bg-gray-700/50 shadow-sm border border-gray-100 dark:border-gray-600"
+                                        title="Edit"
+                                        aria-label="Edit Note"
+                                    >
+                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(note._id)}
+                                        className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg bg-white dark:bg-gray-700/50 shadow-sm border border-gray-100 dark:border-gray-600"
+                                        title="Delete"
+                                        aria-label="Delete Note"
+                                    >
+                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
                                 </div>
                             </div>
                         ))}

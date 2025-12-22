@@ -484,8 +484,9 @@ cron.schedule('* * * * *', async () => {
 // Note Schema
 const NoteSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  title: { type: String }, // Optional
+  title: { type: String }, // Optional - keeping for backward compatibility but unused in new UI
   content: { type: String, required: true },
+  order: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -497,7 +498,7 @@ const Note = mongoose.model('Note', NoteSchema);
 // Get All Notes
 app.get('/api/notes', auth, async (req, res) => {
   try {
-    const notes = await Note.find({ userId: req.user._id }).sort({ updatedAt: -1 });
+    const notes = await Note.find({ userId: req.user._id }).sort({ order: 1 });
     res.json(notes);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -508,10 +509,14 @@ app.get('/api/notes', auth, async (req, res) => {
 app.post('/api/notes', auth, async (req, res) => {
   const { title, content } = req.body;
   try {
+    // Get current count for order
+    const count = await Note.countDocuments({ userId: req.user._id });
+
     const newNote = new Note({
       userId: req.user._id,
       title,
-      content
+      content,
+      order: count
     });
     await newNote.save();
     res.status(201).json(newNote);
@@ -534,6 +539,22 @@ app.patch('/api/notes/:id', auth, async (req, res) => {
 
     await note.save();
     res.json(note);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Reorder Notes
+app.patch('/api/notes/reorder/batch', auth, async (req, res) => {
+  const { noteIds } = req.body; // Array of IDs in new order
+
+  try {
+    const operations = noteIds.map((id, index) => {
+      return Note.updateOne({ _id: id, userId: req.user._id }, { order: index });
+    });
+
+    await Promise.all(operations);
+    res.json({ message: 'Notes reordered' });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }

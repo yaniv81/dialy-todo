@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react';
 
 export default function NoteModal({ initialData, onClose, onSave }) {
-    const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
 
     useEffect(() => {
         if (initialData) {
-            setTitle(initialData.title);
             setContent(initialData.content);
         }
     }, [initialData]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSave({ title, content });
+        onSave({ content });
     };
 
     return (
@@ -23,15 +21,6 @@ export default function NoteModal({ initialData, onClose, onSave }) {
                     {initialData ? 'Edit Note' : 'Add Note'}
                 </h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Title (optional)"
-                            className="w-full px-3 py-2 border-b border-gray-300 dark:border-gray-600 focus:outline-none focus:border-blue-500 bg-transparent text-lg font-bold text-gray-800 dark:text-white placeholder-gray-400"
-                        />
-                    </div>
                     <div className="flex-1">
                         <textarea
                             value={content}
