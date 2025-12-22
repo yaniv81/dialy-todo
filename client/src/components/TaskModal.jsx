@@ -286,11 +286,10 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
                                     onClick={() => toggleDay(index)}
                                     disabled={removeAfterCompletion}
                                     className={`w-10 h-10 rounded-full text-xs font-bold transition 
-                                        ${repeatEveryOtherDay ? 'opacity-55' : ''} 
                                         ${removeAfterCompletion ? (days.includes(index) ? 'opacity-50 cursor-not-allowed' : 'opacity-20 cursor-not-allowed') : ''}
                                         ${days.includes(index)
-                                            ? (repeatEveryOtherDay ? 'bg-blue-500 text-white' : 'bg-green-500 text-white')
-                                            : (repeatEveryOtherDay ? 'bg-gray-400 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200')}
+                                            ? (repeatEveryOtherDay ? 'bg-purple-600 text-white' : 'bg-green-500 text-white')
+                                            : (repeatEveryOtherDay ? 'bg-orange-400 text-white opacity-80' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600')}
                                     `}
                                 >
                                     {name.charAt(0)}

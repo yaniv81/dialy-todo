@@ -297,19 +297,26 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="flex gap-1 mt-1">
+                                        <div className="flex gap-2 mt-2">
                                             {task.recurring && (
-                                                ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIndex) => (
-                                                    <span
-                                                        key={day}
-                                                        className={`text-[10px] px-1.5 py-0.5 rounded ${task.days && task.days.includes(dIndex)
-                                                            ? 'bg-blue-100 text-blue-700 font-bold dark:bg-blue-900 dark:text-blue-200'
-                                                            : 'text-gray-300 dark:text-gray-600'
-                                                            }`}
-                                                    >
-                                                        {day}
-                                                    </span>
-                                                ))
+                                                ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIndex) => {
+                                                    const isActive = task.days && task.days.includes(dIndex);
+                                                    const isEveryOtherDay = task.frequency === 'everyOtherDay';
+                                                    let colorClass = '';
+                                                    if (isEveryOtherDay) {
+                                                        colorClass = isActive ? 'bg-purple-600 text-white' : 'bg-orange-400 text-white opacity-80';
+                                                    } else {
+                                                        colorClass = isActive ? 'bg-green-500 text-white font-bold' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400';
+                                                    }
+                                                    return (
+                                                        <span
+                                                            key={day}
+                                                            className={`text-[10px] w-8 py-0.5 rounded inline-flex justify-center ${colorClass}`}
+                                                        >
+                                                            {day}
+                                                        </span>
+                                                    );
+                                                })
                                             )}
                                             {!task.recurring && (
                                                 <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">One-off</span>
