@@ -481,6 +481,76 @@ cron.schedule('* * * * *', async () => {
   }
 });
 
+// Note Schema
+const NoteSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  title: { type: String }, // Optional
+  content: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const Note = mongoose.model('Note', NoteSchema);
+
+// Notes API
+
+// Get All Notes
+app.get('/api/notes', auth, async (req, res) => {
+  try {
+    const notes = await Note.find({ userId: req.user._id }).sort({ updatedAt: -1 });
+    res.json(notes);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Create Note
+app.post('/api/notes', auth, async (req, res) => {
+  const { title, content } = req.body;
+  try {
+    const newNote = new Note({
+      userId: req.user._id,
+      title,
+      content
+    });
+    await newNote.save();
+    res.status(201).json(newNote);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update Note
+app.patch('/api/notes/:id', auth, async (req, res) => {
+  const { id } = req.params;
+  const { title, content } = req.body;
+  try {
+    const note = await Note.findOne({ _id: id, userId: req.user._id });
+    if (!note) return res.status(404).json({ error: 'Note not found' });
+
+    if (title !== undefined) note.title = title;
+    if (content !== undefined) note.content = content;
+    note.updatedAt = Date.now();
+
+    await note.save();
+    res.json(note);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete Note
+app.delete('/api/notes/:id', auth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await Note.findOneAndDelete({ _id: id, userId: req.user._id });
+    if (!result) return res.status(404).json({ error: 'Note not found' });
+    res.json({ message: 'Note deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // match one above, send back React's index.html file.
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'client/dist/index.html'));

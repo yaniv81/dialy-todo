@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ManageTasks from './ManageTasks';
 import TaskModal from './TaskModal';
+import Notes from './Notes';
 import api from '../lib/axios';
 import ThemeToggle from './ThemeToggle';
 
@@ -13,27 +14,14 @@ const getLocalDateStr = () => {
     return `${year}-${month}-${day}`;
 };
 
-// Helper for VAPID
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-        .replace(/-/g, '+')
-        .replace(/_/g, '/');
-
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
+// ... (existing helper functions)
 
 export default function Dashboard({ user, onLogout, refreshUser }) {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showManage, setShowManage] = useState(false);
+    const [showNotes, setShowNotes] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showBottomBar, setShowBottomBar] = useState(true);
 
@@ -53,6 +41,8 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    // ... (existing subscriptions and clocks)
 
     // Push Notifications
     const subscribeToPush = async () => {
@@ -134,8 +124,6 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
         }
     };
 
-    // ... imports and other code ...
-
     const handleAddTask = async (text, days, recurring, frequency, startDate, alertEnabled, alertTime, alertMode, category, categoryColor) => {
         try {
             await api.post('/api/tasks', {
@@ -153,7 +141,6 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
             });
             fetchTasks();
             setShowAddModal(false);
-            // We might want to refresh user to get new categories if any added
             if (categoryColor) {
                 refreshUser(); // Refresh user to get new categories
             }
@@ -168,21 +155,9 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
     const todayIndex = new Date().getDay(); // 0-6 Sun-Sat
     const todayStr = getLocalDateStr();
 
-    // Helper to check if a date string matches today
-    const isDateToday = (dateString, todayString) => {
-        return dateString === todayString;
-    };
-
     const todaysTasks = tasks.filter(t => {
         if (t.recurring) {
             if (t.frequency === 'everyOtherDay' && t.startDate) {
-                // Calculate difference in days between start date and today
-                const start = new Date(t.startDate);
-                const today = new Date(todayStr);
-                const diffTime = Math.abs(today - start);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                // Using Math.ceil might be risky with timezones, let's allow small margin or normalize to noon
-                // Better:
                 const d1 = new Date(t.startDate); d1.setHours(0, 0, 0, 0);
                 const d2 = new Date(todayStr); d2.setHours(0, 0, 0, 0);
                 const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
@@ -195,7 +170,6 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
         }
     });
 
-
     // Sort logic
     todaysTasks.sort((a, b) => {
         if (sortBy === 'category') {
@@ -207,7 +181,6 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
                 return catA.localeCompare(catB);
             }
         }
-        // Fallback or default to priority
         return (a.priority || 0) - (b.priority || 0);
     });
 
@@ -219,6 +192,10 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
             fetchTasks={fetchTasks}
             refreshUser={refreshUser}
         />;
+    }
+
+    if (showNotes) {
+        return <Notes onClose={() => setShowNotes(false)} />;
     }
 
     return (
@@ -242,7 +219,7 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
 
 
             {/* Main Content */}
-            <main className="flex-1 max-w-3xl w-full mx-auto p-6 pb-24 dark:text-gray-100">
+            <main className="flex-1 max-w-3xl w-full mx-auto p-6 pb-28 dark:text-gray-100">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Today's Focus</h2>
                     <div className="flex items-center gap-2">
@@ -355,17 +332,39 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
             <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transform transition-transform duration-300 ease-in-out z-20 flex justify-center gap-4 dark:bg-gray-800 dark:border-gray-700 ${showBottomBar ? 'translate-y-0' : 'translate-y-full'}`}>
                 <button
                     onClick={() => setShowManage(true)}
-                    className="flex-1 max-w-xs px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+                    className="flex-1 max-w-[140px] px-2 py-3 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
                 >
                     Manage Tasks
                 </button>
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className="flex-1 max-w-xs px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-md dark:bg-blue-500 dark:hover:bg-blue-600"
+                    className="flex-1 max-w-[140px] px-2 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-md dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
                     + New Task
+                </button>
+                <button
+                    onClick={() => setShowNotes(true)}
+                    className="flex-1 max-w-[140px] px-2 py-3 text-sm font-medium text-gray-700 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition dark:bg-gray-700 dark:text-yellow-200 dark:border-yellow-600 dark:hover:bg-gray-600"
+                >
+                    Notes
                 </button>
             </div>
         </div>
     );
 }
+// Helper for VAPID
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
