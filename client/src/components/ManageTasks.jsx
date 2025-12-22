@@ -128,7 +128,7 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
                                         ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIndex) => (
                                             <span
                                                 key={day}
-                                                className={`text-[10px] px-1.5 py-0.5 rounded ${task.days.includes(dIndex) ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-300'}`}
+                                                className={`text-[10px] px-1.5 py-0.5 rounded ${task.days.includes(dIndex) ? 'bg-blue-100 text-blue-700 font-bold dark:bg-blue-900 dark:text-blue-200' : 'text-gray-300 dark:text-gray-600'}`}
                                             >
                                                 {day}
                                             </span>
