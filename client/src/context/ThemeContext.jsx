@@ -45,7 +45,7 @@ export function ThemeProvider({ children }) {
         // Add current theme
         root.classList.add(theme);
         // Persist to cookie (1 year expiry)
-        setCookie('theme', theme, 365);
+        setCookie('theme', theme, 30);
     }, [theme]);
 
     const toggleTheme = () => {

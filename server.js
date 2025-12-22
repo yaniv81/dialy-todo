@@ -103,7 +103,7 @@ app.post('/api/auth/login', async (req, res) => {
     res.cookie('userId', user._id.toString(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
     res.json({ message: 'Logged in', user: { id: user._id.toString(), email: user.email } });
