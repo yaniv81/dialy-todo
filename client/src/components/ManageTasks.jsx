@@ -63,7 +63,7 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
 
     return (
         <div className="fixed inset-0 bg-white z-20 overflow-y-auto dark:bg-gray-900">
-            <div className="max-w-3xl mx-auto p-6">
+            <div className="max-w-3xl mx-auto p-4 md:p-6">
                 <div className="flex justify-between items-center mb-2">
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Manage Tasks</h2>
                     <button
@@ -85,8 +85,8 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
 
                 <div className="space-y-2">
                     {localTasks.map((task, index) => (
-                        <div key={task.id} className="flex items-center p-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">
-                            <div className="flex flex-col mr-4 gap-1">
+                        <div key={task.id} className="relative flex items-center p-4 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">
+                            <div className="flex flex-col mr-2 md:mr-4 gap-4">
                                 <button
                                     onClick={() => moveTask(index, 'up')}
                                     disabled={index === 0}
@@ -105,21 +105,21 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
                                 </button>
                             </div>
 
-                            <div className="flex-1">
-                                <div className="flex items-center justify-between gap-2">
-                                    <span className="font-medium text-gray-800 dark:text-gray-100 break-words flex-1 text-left">
+                            <div className="flex-1 pl-4">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                    <span className="font-medium text-gray-800 dark:text-gray-100 break-words text-left pb-2">
                                         {task.text}
                                     </span>
                                     {task.category && (
                                         <span
                                             style={{ backgroundColor: user?.categories?.find(c => c.name === task.category)?.color || '#3B82F6' }}
-                                            className="text-xs px-2 py-0.5 rounded text-white shrink-0"
+                                            className="text-xs px-2 py-0.5 rounded text-white shrink-0 self-start mt-1"
                                         >
                                             {task.category}
                                         </span>
                                     )}
                                 </div>
-                                <div className="flex gap-2 mt-2">
+                                <div className="flex gap-2 flex-wrap">
                                     {task.recurring === false ? (
                                         <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">
                                             One-off ({task.date})
@@ -148,17 +148,17 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-1 items-center ml-4">
+                            <div className="absolute top-2 right-2 flex items-center gap-1">
                                 <button
                                     onClick={() => setEditingTask(task)}
-                                    className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
+                                    className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition"
                                     title="Edit Task"
                                 >
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                 </button>
                                 <button
                                     onClick={() => handleDelete(task.id)}
-                                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
+                                    className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition"
                                     title="Delete Task"
                                 >
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
