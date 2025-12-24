@@ -203,17 +203,17 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
             {/* Header */}
             <header className="bg-white shadow px-6 py-4 flex justify-between items-center sticky top-0 z-10 dark:bg-gray-800 dark:border-b dark:border-gray-700">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Daily Flow</h1>
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Daily Flow</h1>
                     <p className="text-gray-500 text-sm dark:text-gray-400">
                         {currentTime.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
                         <span className="mx-2">•</span>
                         {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                 </div>
-                <div className="flex items-center gap-4">
-                    <ThemeToggle />
+                <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-4">
+                    <ThemeToggle className="order-last sm:order-none" />
                     <span className="text-sm font-medium text-gray-700 hidden sm:block dark:text-gray-300">{user.email}</span>
-                    <button onClick={onLogout} className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">Logout</button>
+                    <button onClick={onLogout} className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 mb-2 md:mb-0 mr-2 md:mr-0">Logout</button>
                 </div>
             </header>
 
