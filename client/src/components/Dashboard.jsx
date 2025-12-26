@@ -77,6 +77,8 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
         }
     }, []);
 
+
+
     // Clock
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -367,4 +369,5 @@ function urlBase64ToUint8Array(base64String) {
     }
     return outputArray;
 }
+
 
