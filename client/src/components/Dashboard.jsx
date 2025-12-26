@@ -72,7 +72,7 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
     };
 
     useEffect(() => {
-        if (Notification.permission === 'granted') {
+        if ('Notification' in window && Notification.permission === 'granted') {
             subscribeToPush();
         }
     }, []);
