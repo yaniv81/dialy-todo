@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { getCookie, setCookie } from '../lib/cookie';
 
 const PWAInstallPrompt = () => {
     const { isSupported, isInstalled, isIOS, promptInstall } = usePWAInstall();
@@ -7,7 +8,7 @@ const PWAInstallPrompt = () => {
 
     useEffect(() => {
         // Did the user already dismiss usage?
-        const isDismissed = localStorage.getItem('pwa_install_dismissed') === 'true';
+        const isDismissed = getCookie('pwa_install_dismissed') === 'true';
 
         // Show if:
         // 1. Not already installed
@@ -20,7 +21,7 @@ const PWAInstallPrompt = () => {
 
     const handleDismiss = () => {
         setIsVisible(false);
-        localStorage.setItem('pwa_install_dismissed', 'true');
+        setCookie('pwa_install_dismissed', 'true', 365);
     };
 
     const handleInstallClick = () => {

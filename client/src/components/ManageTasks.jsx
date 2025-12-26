@@ -5,6 +5,8 @@ import api from '../lib/axios';
 import TaskModal from './TaskModal';
 import ManageCategoriesModal from './ManageCategoriesModal';
 
+import { eraseCookie } from '../lib/cookie';
+
 export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshUser }) {
     // Local state for optimistic reordering?
     // We can just use props.tasks if we update parent or use local copy.
@@ -185,7 +187,11 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
                                         caches.delete(name);
                                     }
                                 });
-                                localStorage.clear();
+                                // Clear known cookies
+                                eraseCookie('theme');
+                                eraseCookie('pwa_install_dismissed');
+
+                                localStorage.clear(); // Keep just in case other libs use it, but primary data is moved
                                 sessionStorage.clear();
                                 window.location.reload(true);
                             }
@@ -202,28 +208,32 @@ export default function ManageTasks({ user, tasks, onClose, fetchTasks, refreshU
                     </p>
                 </div>
             </div>
-            {editingTask && (
-                <TaskModal
-                    user={user}
-                    tasks={localTasks}
-                    refreshUser={refreshUser}
-                    fetchTasks={fetchTasks}
-                    initialData={editingTask}
-                    onClose={() => setEditingTask(null)}
-                    onSave={handleUpdateTask}
-                />
-            )}
-            {showCategoryModal && (
-                <ManageCategoriesModal
-                    user={user}
-                    tasks={tasks}
-                    onClose={() => setShowCategoryModal(false)}
-                    onUpdate={() => {
-                        if (refreshUser) refreshUser();
-                        if (fetchTasks) fetchTasks();
-                    }}
-                />
-            )}
-        </div>
+            {
+                editingTask && (
+                    <TaskModal
+                        user={user}
+                        tasks={localTasks}
+                        refreshUser={refreshUser}
+                        fetchTasks={fetchTasks}
+                        initialData={editingTask}
+                        onClose={() => setEditingTask(null)}
+                        onSave={handleUpdateTask}
+                    />
+                )
+            }
+            {
+                showCategoryModal && (
+                    <ManageCategoriesModal
+                        user={user}
+                        tasks={tasks}
+                        onClose={() => setShowCategoryModal(false)}
+                        onUpdate={() => {
+                            if (refreshUser) refreshUser();
+                            if (fetchTasks) fetchTasks();
+                        }}
+                    />
+                )
+            }
+        </div >
     );
 }
