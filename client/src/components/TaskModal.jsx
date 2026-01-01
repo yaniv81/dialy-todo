@@ -14,15 +14,27 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
     const [days, setDays] = useState(initialData?.days || []);
     const [repeatEveryOtherDay, setRepeatEveryOtherDay] = useState(false);
 
-    // Initialize repeat toggle states based on initialData
+    // Initialize based on initialData or User Settings
     useEffect(() => {
         if (initialData) {
+            // Edit Mode
             if (initialData.frequency === 'everyOtherDay') {
                 setRepeatEveryOtherDay(true);
             }
-            // else standard recurring (days array)
+            // days are already set by useState(initialData.days)
+        } else {
+            // New Task Mode - Apply Defaults
+            if (user?.settings) {
+                if (user.settings.defaultRepeatEveryDay) {
+                    setDays([0, 1, 2, 3, 4, 5, 6]);
+                    setRepeatEveryOtherDay(false);
+                } else if (user.settings.defaultRepeatEveryOtherDay) {
+                    setRepeatEveryOtherDay(true);
+                    setDays([0, 2, 4, 6]); // Visual placeholder for every other day
+                }
+            }
         }
-    }, [initialData]);
+    }, [initialData, user]);
 
     // Category State
     const [showManageCategories, setShowManageCategories] = useState(false);
@@ -129,82 +141,84 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
 
                     <div className="space-y-3 mb-6">
                         {/* Category Selection */}
-                        <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Category</label>
+                        {(!user?.settings?.hideCategories) && (
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-200">Category</label>
 
-                            {!isNewCategory ? (
-                                <div className="flex gap-2 mb-2">
-                                    <select
-                                        value={category}
-                                        onChange={(e) => setCategory(e.target.value)}
-                                        className="flex-1 px-3 py-2 border border-gray-300 rounded bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                    >
-                                        <option value="">None</option>
-                                        {user.categories && user.categories.map(c => (
-                                            <option key={c.name} value={c.name}>{c.name}</option>
-                                        ))}
-                                    </select>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setIsNewCategory(true);
-                                            setCategory('');
-                                            // Pick a random dark color not already in use if possible
-                                            const usedColors = new Set((user.categories || []).map(c => c.color));
-                                            const available = DARK_PALETTE.filter(c => !usedColors.has(c));
-                                            const nextColor = available.length > 0
-                                                ? available[Math.floor(Math.random() * available.length)]
-                                                : DARK_PALETTE[Math.floor(Math.random() * DARK_PALETTE.length)];
-                                            setCategoryColor(nextColor);
-                                        }}
-                                        className="px-3 py-2 text-sm text-blue-600 bg-blue-50 rounded hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 whitespace-nowrap"
-                                    >
-                                        + Add Category
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 dark:bg-gray-700 dark:border-gray-600 mb-2">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">New Category</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => { setIsNewCategory(false); setCategory(''); }}
-                                            className="text-xs text-red-500 hover:text-red-700"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <div className="relative group">
-                                            <button
-                                                type="button"
-                                                className="w-10 h-10 rounded border border-gray-300 shadow-sm flex-shrink-0"
-                                                style={{ backgroundColor: categoryColor }}
-                                            />
-                                            <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-xl rounded-lg p-2 grid grid-cols-5 gap-1 z-50 hidden group-hover:grid w-[180px]">
-                                                {DARK_PALETTE.map(c => (
-                                                    <button
-                                                        key={c}
-                                                        type="button"
-                                                        className={`w-6 h-6 rounded-full hover:scale-110 transition ${c === categoryColor ? 'ring-2 ring-offset-1 ring-blue-500' : ''}`}
-                                                        style={{ backgroundColor: c }}
-                                                        onClick={() => setCategoryColor(c)}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <input
-                                            type="text"
-                                            placeholder="Category Name"
+                                {!isNewCategory ? (
+                                    <div className="flex gap-2 mb-2">
+                                        <select
                                             value={category}
                                             onChange={(e) => setCategory(e.target.value)}
-                                            className="flex-1 px-3 py-2 border border-gray-300 rounded dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                                            autoFocus
-                                        />
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        >
+                                            <option value="">None</option>
+                                            {user.categories && user.categories.map(c => (
+                                                <option key={c.name} value={c.name}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsNewCategory(true);
+                                                setCategory('');
+                                                // Pick a random dark color not already in use if possible
+                                                const usedColors = new Set((user.categories || []).map(c => c.color));
+                                                const available = DARK_PALETTE.filter(c => !usedColors.has(c));
+                                                const nextColor = available.length > 0
+                                                    ? available[Math.floor(Math.random() * available.length)]
+                                                    : DARK_PALETTE[Math.floor(Math.random() * DARK_PALETTE.length)];
+                                                setCategoryColor(nextColor);
+                                            }}
+                                            className="px-3 py-2 text-sm text-blue-600 bg-blue-50 rounded hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 whitespace-nowrap"
+                                        >
+                                            + Add Category
+                                        </button>
                                     </div>
-                                </div>
-                            )}
-                        </div>
+                                ) : (
+                                    <div className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 dark:bg-gray-700 dark:border-gray-600 mb-2">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">New Category</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setIsNewCategory(false); setCategory(''); }}
+                                                className="text-xs text-red-500 hover:text-red-700"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <div className="relative group">
+                                                <button
+                                                    type="button"
+                                                    className="w-10 h-10 rounded border border-gray-300 shadow-sm flex-shrink-0"
+                                                    style={{ backgroundColor: categoryColor }}
+                                                />
+                                                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-xl rounded-lg p-2 grid grid-cols-5 gap-1 z-50 hidden group-hover:grid w-[180px]">
+                                                    {DARK_PALETTE.map(c => (
+                                                        <button
+                                                            key={c}
+                                                            type="button"
+                                                            className={`w-6 h-6 rounded-full hover:scale-110 transition ${c === categoryColor ? 'ring-2 ring-offset-1 ring-blue-500' : ''}`}
+                                                            style={{ backgroundColor: c }}
+                                                            onClick={() => setCategoryColor(c)}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="Category Name"
+                                                value={category}
+                                                onChange={(e) => setCategory(e.target.value)}
+                                                className="flex-1 px-3 py-2 border border-gray-300 rounded dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                                                autoFocus
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100 dark:bg-gray-700 dark:border-gray-600">
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Repeat every day</span>

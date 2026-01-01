@@ -127,10 +127,33 @@ app.get('/api/auth/me', async (req, res) => {
   try {
     const user = await User.findById(userId);
     if (!user) return res.json({ user: null });
-    res.json({ user: { id: user._id.toString(), email: user.email, categories: user.categories } });
+    res.json({ user: { id: user._id.toString(), email: user.email, categories: user.categories, settings: user.settings } });
   } catch (err) {
     console.error('Auth error:', err);
     res.json({ user: null });
+  }
+});
+
+// Update User Settings
+app.patch('/api/user/settings', auth, async (req, res) => {
+  const { defaultRepeatEveryDay, defaultRepeatEveryOtherDay, hideCategories } = req.body;
+
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (!user.settings) user.settings = {};
+
+    if (defaultRepeatEveryDay !== undefined) user.settings.defaultRepeatEveryDay = defaultRepeatEveryDay;
+    if (defaultRepeatEveryOtherDay !== undefined) user.settings.defaultRepeatEveryOtherDay = defaultRepeatEveryOtherDay;
+    if (hideCategories !== undefined) user.settings.hideCategories = hideCategories;
+
+    await user.save();
+
+    res.json({ user: { id: user._id.toString(), email: user.email, categories: user.categories, settings: user.settings } });
+  } catch (err) {
+    console.error('Update settings error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

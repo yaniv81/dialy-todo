@@ -4,7 +4,12 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   timezone: { type: String, default: 'UTC' },
-  categories: { type: [{ name: String, color: String }], default: [] }
+  categories: { type: [{ name: String, color: String }], default: [] },
+  settings: {
+    defaultRepeatEveryDay: { type: Boolean, default: false },
+    defaultRepeatEveryOtherDay: { type: Boolean, default: false },
+    hideCategories: { type: Boolean, default: false }
+  }
 });
 
 // Map _id to id for frontend compatibility
