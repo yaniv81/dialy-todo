@@ -10,31 +10,24 @@ const getLocalDateStr = () => {
 };
 
 export default function TaskModal({ user, tasks = [], onClose, onSave, initialData = null, refreshUser, fetchTasks }) {
+    // Initialize state directly from props to avoid flash
     const [text, setText] = useState(initialData?.text || '');
-    const [days, setDays] = useState(initialData?.days || []);
-    const [repeatEveryOtherDay, setRepeatEveryOtherDay] = useState(false);
 
-    // Initialize based on initialData or User Settings
-    useEffect(() => {
-        if (initialData) {
-            // Edit Mode
-            if (initialData.frequency === 'everyOtherDay') {
-                setRepeatEveryOtherDay(true);
-            }
-            // days are already set by useState(initialData.days)
-        } else {
-            // New Task Mode - Apply Defaults
-            if (user?.settings) {
-                if (user.settings.defaultRepeatEveryDay) {
-                    setDays([0, 1, 2, 3, 4, 5, 6]);
-                    setRepeatEveryOtherDay(false);
-                } else if (user.settings.defaultRepeatEveryOtherDay) {
-                    setRepeatEveryOtherDay(true);
-                    setDays([0, 2, 4, 6]); // Visual placeholder for every other day
-                }
-            }
-        }
-    }, [initialData, user]);
+    // Calculate initial values for toggles
+    const getInitialDays = () => {
+        if (initialData) return initialData.days || [];
+        if (user?.settings?.defaultRepeatEveryDay) return [0, 1, 2, 3, 4, 5, 6];
+        if (user?.settings?.defaultRepeatEveryOtherDay) return [0, 2, 4, 6];
+        return [];
+    };
+
+    const getInitialRepeatEveryOtherDay = () => {
+        if (initialData) return initialData.frequency === 'everyOtherDay';
+        return user?.settings?.defaultRepeatEveryOtherDay || false;
+    };
+
+    const [days, setDays] = useState(getInitialDays);
+    const [repeatEveryOtherDay, setRepeatEveryOtherDay] = useState(getInitialRepeatEveryOtherDay);
 
     // Category State
     const [showManageCategories, setShowManageCategories] = useState(false);
