@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import ManageTasks from './ManageTasks';
 import TaskModal from './TaskModal';
 import Notes from './Notes';
@@ -15,6 +16,94 @@ const getLocalDateStr = () => {
 };
 
 // ... (existing helper functions)
+
+const TaskItem = ({ task, user, onComplete, onDelete, todayStr }) => {
+    const isCompleted = task.completedDates.includes(todayStr);
+    const x = useMotionValue(0);
+    const opacity = useTransform(x, [0, 300], [1, 0]);
+    // const backgroundOpacity = useTransform(x, [0, 200], [0, 1]); // Unused
+
+    const handleDragEnd = (event, info) => {
+        if (info.offset.x > 250) { // Increased Threshold
+            if (window.confirm(`Delete "${task.text}"?`)) {
+                onDelete(task.id);
+            }
+            // If cancelled, dragSnapToOrigin will handle returning to start position.
+        }
+    };
+
+    return (
+        <motion.div
+            style={{ x, opacity }}
+            drag={isCompleted ? "x" : false} // Only allow drag if completed
+            dragConstraints={{ left: 0, right: 1000 }} // Allow dragging right
+            dragElastic={0.1}
+            dragSnapToOrigin={true} // Snap back if released (and not unmounted)
+            onDragEnd={handleDragEnd}
+            whileDrag={isCompleted ? { scale: 1.02, cursor: 'grabbing' } : {}}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            className={`relative flex items-center p-4 bg-white rounded-lg shadow-sm cursor-grab touch-pan-y dark:bg-gray-800 dark:shadow-none dark:border dark:border-gray-700 mb-3 ${isCompleted ? 'opacity-50' : 'hover:shadow-md'}`}
+        >
+            {/* Delete Indicator Background (Optional - could be behind but simpler to just fade out) */}
+
+            <div
+                onClick={(e) => {
+                    // Prevent click when dragging logic takes over? 
+                    // Usually click works fine unless dragged.
+                    onComplete(task);
+                }}
+                className="flex items-center w-full"
+            >
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition flex-shrink-0 ${isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-300 dark:border-gray-500'}`}>
+                    {isCompleted && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                        <span className={`text-lg font-medium break-words flex-1 text-left ${isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'}`}>
+                            {task.text}
+                        </span>
+                        {task.category && (
+                            <span
+                                style={{ backgroundColor: user.categories?.find(c => c.name === task.category)?.color || '#3B82F6' }}
+                                className="text-xs px-2 py-0.5 rounded text-white shrink-0"
+                            >
+                                {task.category}
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                        {task.recurring && (
+                            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIndex) => {
+                                const isActive = task.days && task.days.includes(dIndex);
+                                const isEveryOtherDay = task.frequency === 'everyOtherDay';
+                                let colorClass = '';
+                                if (isEveryOtherDay) {
+                                    colorClass = isActive ? 'bg-purple-600 text-white' : 'bg-orange-400 text-white opacity-80';
+                                } else {
+                                    colorClass = isActive ? 'bg-green-500 text-white font-bold' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400';
+                                }
+                                return (
+                                    <span
+                                        key={day}
+                                        className={`text-[10px] w-8 py-0.5 rounded inline-flex justify-center ${colorClass}`}
+                                    >
+                                        {day}
+                                    </span>
+                                );
+                            })
+                        )}
+                        {!task.recurring && (
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">One-off</span>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
 
 export default function Dashboard({ user, onLogout, refreshUser }) {
     const [tasks, setTasks] = useState([]);
@@ -125,6 +214,18 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
             fetchTasks(); // Revert on error
         }
     };
+
+    const handleDeleteTask = async (id) => {
+        try {
+            await api.delete(`/api/tasks/${id}`);
+            setTasks(prev => prev.filter(t => t.id !== id));
+            // No need to fetchTasks() if we optimistically remove, usually.
+        } catch (err) {
+            console.error('Delete failed', err);
+            alert('Failed to delete task');
+            fetchTasks();
+        }
+    }
 
     const handleAddTask = async (text, days, recurring, frequency, startDate, alertEnabled, alertTime, alertMode, category, categoryColor) => {
         try {
@@ -251,60 +352,18 @@ export default function Dashboard({ user, onLogout, refreshUser }) {
                             </button>
                         </div>
                     ) : (
-                        todaysTasks.map(task => {
-                            const isCompleted = task.completedDates.includes(todayStr);
-                            return (
-                                <div
+                        <AnimatePresence>
+                            {todaysTasks.map(task => (
+                                <TaskItem
                                     key={task.id}
-                                    onClick={() => handleTaskComplete(task)}
-                                    className={`flex items-center p-4 bg-white rounded-lg shadow-sm cursor-pointer transition transform hover:scale-[1.01] dark:bg-gray-800 dark:shadow-none dark:border dark:border-gray-700 ${isCompleted ? 'opacity-50' : 'hover:shadow-md'}`}
-                                >
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-4 transition ${isCompleted ? 'bg-green-500 border-green-500' : 'border-gray-300 dark:border-gray-500'}`}>
-                                        {isCompleted && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className={`text-lg font-medium break-words flex-1 text-left ${isCompleted ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'}`}>
-                                                {task.text}
-                                            </span>
-                                            {task.category && (
-                                                <span
-                                                    style={{ backgroundColor: user.categories?.find(c => c.name === task.category)?.color || '#3B82F6' }}
-                                                    className="text-xs px-2 py-0.5 rounded text-white shrink-0"
-                                                >
-                                                    {task.category}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex gap-2 mt-2">
-                                            {task.recurring && (
-                                                ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dIndex) => {
-                                                    const isActive = task.days && task.days.includes(dIndex);
-                                                    const isEveryOtherDay = task.frequency === 'everyOtherDay';
-                                                    let colorClass = '';
-                                                    if (isEveryOtherDay) {
-                                                        colorClass = isActive ? 'bg-purple-600 text-white' : 'bg-orange-400 text-white opacity-80';
-                                                    } else {
-                                                        colorClass = isActive ? 'bg-green-500 text-white font-bold' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400';
-                                                    }
-                                                    return (
-                                                        <span
-                                                            key={day}
-                                                            className={`text-[10px] w-8 py-0.5 rounded inline-flex justify-center ${colorClass}`}
-                                                        >
-                                                            {day}
-                                                        </span>
-                                                    );
-                                                })
-                                            )}
-                                            {!task.recurring && (
-                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">One-off</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })
+                                    task={task}
+                                    user={user}
+                                    onComplete={handleTaskComplete}
+                                    onDelete={handleDeleteTask}
+                                    todayStr={todayStr}
+                                />
+                            ))}
+                        </AnimatePresence>
                     )}
                 </div>
             </main>
