@@ -12,16 +12,12 @@ const getLocalDateStr = () => {
 export default function TaskModal({ user, tasks = [], onClose, onSave, initialData = null, refreshUser, fetchTasks }) {
     const [text, setText] = useState(initialData?.text || '');
     const [days, setDays] = useState(initialData?.days || []);
-    // Replaced doNotRepeat with removeAfterCompletion
-    const [removeAfterCompletion, setRemoveAfterCompletion] = useState(false);
     const [repeatEveryOtherDay, setRepeatEveryOtherDay] = useState(false);
 
     // Initialize repeat toggle states based on initialData
     useEffect(() => {
         if (initialData) {
-            if (initialData.removeAfterCompletion) {
-                setRemoveAfterCompletion(true);
-            } else if (initialData.frequency === 'everyOtherDay') {
+            if (initialData.frequency === 'everyOtherDay') {
                 setRepeatEveryOtherDay(true);
             }
             // else standard recurring (days array)
@@ -59,9 +55,6 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     const toggleDay = (index) => {
-        // If Remove After Completion is on, prevent changing days (it forces all days)
-        if (removeAfterCompletion) return;
-
         // Turning off special modes if user manually selects days
         if (repeatEveryOtherDay) setRepeatEveryOtherDay(false);
 
@@ -77,7 +70,7 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
         if (!text.trim()) return;
 
         // Validation: Must select days unless special modes
-        if (!removeAfterCompletion && !repeatEveryOtherDay && days.length === 0) {
+        if (!repeatEveryOtherDay && days.length === 0) {
             return;
         }
 
@@ -96,7 +89,6 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
             days,
             recurring: isRecurring,
             frequency,
-            removeAfterCompletion,
             startDate,
             alertEnabled,
             alertTime,
@@ -113,26 +105,13 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
         setRepeatEveryOtherDay(newValue);
 
         if (newValue) {
-            setRemoveAfterCompletion(false);
             setDays([0, 2, 4, 6]);
         } else {
             setDays([]);
         }
     };
 
-    const handleRemoveAfterCompletionToggle = () => {
-        const newValue = !removeAfterCompletion;
-        setRemoveAfterCompletion(newValue);
-
-        if (newValue) {
-            setRepeatEveryOtherDay(false);
-            setDays([0, 1, 2, 3, 4, 5, 6]); // All days
-        } else {
-            setDays([]);
-        }
-    };
-
-    const isValid = text.trim() && (removeAfterCompletion || repeatEveryOtherDay || days.length > 0);
+    const isValid = text.trim() && (repeatEveryOtherDay || days.length > 0);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -231,17 +210,15 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Repeat every day</span>
                             <button
                                 type="button"
-                                disabled={removeAfterCompletion} // Disabled if Remove After Completion is on
                                 onClick={() => {
                                     if (days.length === 7) {
                                         setDays([]);
                                     } else {
                                         setDays([0, 1, 2, 3, 4, 5, 6]);
-                                        setRemoveAfterCompletion(false);
                                         setRepeatEveryOtherDay(false);
                                     }
                                 }}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${removeAfterCompletion ? 'opacity-50 cursor-not-allowed' : ''} ${days.length === 7 ? 'bg-green-500' : 'bg-gray-200'}`}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${days.length === 7 ? 'bg-green-500' : 'bg-gray-200'}`}
                             >
                                 <span
                                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${days.length === 7 ? 'translate-x-6' : 'translate-x-1'}`}
@@ -262,18 +239,6 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
                             </button>
                         </div>
 
-                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100 dark:bg-gray-700 dark:border-gray-600">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Remove after completion</span>
-                            <button
-                                type="button"
-                                onClick={handleRemoveAfterCompletionToggle}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${removeAfterCompletion ? 'bg-green-500' : 'bg-gray-200'}`}
-                            >
-                                <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${removeAfterCompletion ? 'translate-x-6' : 'translate-x-1'}`}
-                                />
-                            </button>
-                        </div>
                     </div>
 
                     <div className="mb-6">
@@ -284,9 +249,7 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
                                     key={name}
                                     type="button"
                                     onClick={() => toggleDay(index)}
-                                    disabled={removeAfterCompletion}
                                     className={`w-10 h-10 rounded-full text-xs font-bold transition 
-                                        ${removeAfterCompletion ? (days.includes(index) ? 'opacity-50 cursor-not-allowed' : 'opacity-20 cursor-not-allowed') : ''}
                                         ${days.includes(index)
                                             ? (repeatEveryOtherDay ? 'bg-purple-600 text-white' : 'bg-green-500 text-white')
                                             : (repeatEveryOtherDay ? 'bg-orange-400 text-white opacity-80' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600')}
@@ -296,7 +259,7 @@ export default function TaskModal({ user, tasks = [], onClose, onSave, initialDa
                                 </button>
                             ))}
                         </div>
-                        {(!removeAfterCompletion && !repeatEveryOtherDay && days.length === 0) && (
+                        {(!repeatEveryOtherDay && days.length === 0) && (
                             <p className="text-xs text-red-500 mt-2">Please select at least one day.</p>
                         )}
                     </div>
