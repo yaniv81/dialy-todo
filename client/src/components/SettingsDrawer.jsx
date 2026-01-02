@@ -82,7 +82,7 @@ export default function SettingsDrawer({ isOpen, onClose, user, refreshUser }) {
                                 <span className="text-gray-700 dark:text-gray-300">Repeat every day</span>
                                 <button
                                     onClick={() => handleToggle('defaultRepeatEveryDay')}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.defaultRepeatEveryDay ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'}`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.defaultRepeatEveryDay ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-600'}`}
                                 >
                                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${settings.defaultRepeatEveryDay ? 'translate-x-6' : 'translate-x-1'}`} />
                                 </button>
@@ -93,7 +93,7 @@ export default function SettingsDrawer({ isOpen, onClose, user, refreshUser }) {
                                 <span className="text-gray-700 dark:text-gray-300">Repeat every other day</span>
                                 <button
                                     onClick={() => handleToggle('defaultRepeatEveryOtherDay')}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.defaultRepeatEveryOtherDay ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'}`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.defaultRepeatEveryOtherDay ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-600'}`}
                                 >
                                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${settings.defaultRepeatEveryOtherDay ? 'translate-x-6' : 'translate-x-1'}`} />
                                 </button>
@@ -105,10 +105,10 @@ export default function SettingsDrawer({ isOpen, onClose, user, refreshUser }) {
 
                             {/* Hide Category Section Toggle */}
                             <div className="flex items-center justify-between">
-                                <span className="text-gray-700 dark:text-gray-300">Hide Category Section</span>
+                                <span className="text-gray-700 dark:text-gray-300">Hide category section</span>
                                 <button
                                     onClick={() => handleToggle('hideCategories')}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.hideCategories ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'}`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.hideCategories ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-600'}`}
                                 >
                                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${settings.hideCategories ? 'translate-x-6' : 'translate-x-1'}`} />
                                 </button>
